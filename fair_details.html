@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>fair_details</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        .head {
+            font-family: cursive;
+            background-color: black;
+            color: white;
+            padding: 1px;
+            font-size: 2vw;
+            text-align: center;
+        }
+
+        .left {
+            float: left;
+            width: 15%;
+            height: 80vh;
+            text-align: center;
+        }
+
+        .text {
+            font-size: 2vw;
+        }
+
+        .menu {
+            background-color: lightslategrey;
+            height: 6.155vh;
+            padding: 9px;
+            /* margin-top: 5px; */
+            display: block;
+            width: 100%;
+        }
+
+        a {
+            text-decoration: none;
+            padding: 8px;
+            font-size: 1.2vw;
+            color: black;
+        }
+
+        a:hover {
+            color: white;
+        }
+
+        .a_gethelp {
+            position: relative;
+            display: inline-block;
+        }
+
+        .get_help_dropdown {
+            display: none;
+            position: absolute;
+            background-color: black;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            padding: 12px 16px;
+            z-index: 1;
+        }
+
+        .a_gethelp:hover .get_help_dropdown {
+            display: inline-grid;
+        }
+
+        .get_help_dropdown a:hover {
+            color: black;
+            background-color: rgb(203, 203, 203);
+        }
+
+        .get_help_dropdown a {
+            color: white;
+        }
+
+        .a_contact {
+            position: relative;
+            display: inline-block;
+        }
+
+        .contact_dropdown {
+            display: none;
+            position: absolute;
+            background-color: black;
+            min-width: 150px;
+            padding: 12px 16px;
+            z-index: 1;
+        }
+
+        .contact_dropdown a {
+            color: white;
+        }
+
+        .a_contact:hover .contact_dropdown {
+            display: inline-grid;
+        }
+
+        .contact_dropdown a:hover {
+            color: black;
+            background-color: rgb(203, 203, 203);
+        }
+
+
+        ul {
+            padding: 5px;
+        }
+
+        .form_body {
+            position: relative;
+            text-align: -webkit-center;
+        }
+
+        form {
+            width: 70%;
+            height: auto;
+            border: solid;
+            background-color: slategray;
+            border-radius: 40px;
+            text-align: center;
+        }
+
+        .main {
+            float: left;
+            width: 70%;
+            background-color: white;
+            font-size: 1.5vw;
+            padding: 0 20px;
+        }
+
+        .table1 {
+            width: 80%;
+            text-align: center;
+            background-color: lightgray;
+            border-collapse: collapse;
+            height: 35vw;
+            /* border:2px; */
+        }
+
+        .table1 th {
+            background-color: black;
+            color: white;
+            padding: 7px;
+
+        }
+
+        .table1 tr:hover {
+            background-color: rgb(157, 156, 156);
+        }
+
+        .D_charge {
+            width: 60%;
+            text-align: center;
+            background-color: lightgray;
+            border-collapse: collapse;
+            height: 2.5vw;
+        }
+
+        .D_charge tr:hover {
+            background-color: rgb(157, 156, 156);
+        }
+
+
+        /* .select{
+                background-color: darkslategray;
+                display:flex;
+                width:70%;
+                justify-content: center;
+                padding:20px;
+            } */
+
+        .ads {
+            background-color: lightgray;
+            float: left;
+            height: 1050px;
+            width: 15%;
+            padding: 15px;
+            margin-top: 7px;
+            text-align: center;
+        }
+
+        .demo_image {
+            height: 50%;
+            width: 100%;
+        }
+
+        .footer {
+            background-color: black;
+            color: white;
+            text-align: center;
+            height: auto;
+            padding: 2vw;
+            margin-top: 7px;
+        }
+
+        .table2 {
+            width: 40%;
+            font-size: 1vw;
+            text-align: left;
+        }
+
+        @media only screen and (max-width: 580px) {
+            .main {
+                width: 100%;
+            }
+
+            .menu {
+                height: 6vw;
+                padding: 0;
+            }
+
+            .ads {
+                width: 80vw;
+                height: 40vw;
+                margin-left: 8vw;
+            }
+
+            a {
+                padding: 3px;
+            }
+
+        }
+    </style>
+</head>
+
+<body>
+    <div class="head">
+        <h1>Car And Bike Rental</h1>
+    </div>
+
+
+    <div class="menu">
+        <a class="a_home" href="Project3.html">Home</a>
+        <a href="#">About</a>
+        <div class="a_contact">
+            <a href="#">Contact</a>
+            <div class="contact_dropdown">
+                <a href="#">Mob No.</a>
+                <a href="#">Email</a>
+                <a href="#">Social Media</a>
+            </div>
+        </div>
+        <div class="a_gethelp">
+            <a href="#">Get Help</a>
+            <div class="get_help_dropdown">
+                <a href="fair_details.html">Fair Details</a>
+                <a href="driver_details.html">Driver Details</a>
+                <a href="Facilities.html">Facilities</a>
+                <a href="#">Booking History</a>
+            </div>
+        </div>
+    </div>
+    <div style="overflow:auto">
+        <div class="ads">
+            <h2 class="text">Menu Section</h2>
+            <div>
+                <img class="demo_image" src="images\demo1.jpg">
+            </div><br>
+            <div>
+                <img class="demo_image" src="images\demo2.jpg">
+            </div><br>
+            <div>
+                <img class="demo_image" src="images\demo3.jpg">
+            </div><br>
+            <div>
+                <img class="demo_image" src="images\demo4.jpg">
+            </div><br>
+            <div>
+                <img class="demo_image" src="images\demo5.jpg">
+            </div><br>
+            <div>
+                <img class="demo_image" src="images\demo8.jpg">
+            </div>
+        </div>
+
+        <div class="main">
+            <div>
+                <h2>VEHICLE AND FARE DETAILS</h2>
+                <p></p>
+                <table class="table1" border="2px">
+                    <tr>
+                        <th>CAR NAME</th>
+                        <th>FARE Per Km</th>
+                        <th>CAPACITY</th>
+                    </tr>
+                    <tr>
+                        <td>TATA INDICA</td>
+                        <td>9</td>
+                        <td>4</td>
+                    </tr>
+                    <tr>
+                        <td>SUZUKI DIZIRE</td>
+                        <td>12</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td>TOYOTA INOVA</td>
+                        <td>18</td>
+                        <td>7</td>
+                    </tr>
+                    <tr>
+                        <td>HONDA CITY</td>
+                        <td>15</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td>MARUTI SUZUKI ALTO</td>
+                        <td>10</td>
+                        <td>4</td>
+                    </tr>
+                    <tr>
+                        <td>SUZUKI SWIFT</td>
+                        <td>11</td>
+                        <td>4</td>
+                    </tr>
+                    <tr>
+                        <td>TATA SAFARI</td>
+                        <td>18</td>
+                        <td>7</td>
+                    </tr>
+                    <tr>
+                        <td>TATA NEXON</td>
+                        <td>13</td>
+                        <td>5</td>
+                    </tr>
+                    <tr>
+                        <td>MAHINDRA THAR</td>
+                        <td>18</td>
+                        <td>5</td>
+                    </tr>
+
+
+                    <tr>
+                        <th>BIKE NAME</th>
+                        <th>FARE Per Km</th>
+                        <th>CAPACITY</th>
+                    </tr>
+                    <tr>
+                        <td>HONDA ACTIVA</td>
+                        <td>5</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td>ROYAL ENFILD CLASSIC</td>
+                        <td>10</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td>HONDA SHINE</td>
+                        <td>6</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td>PULSAR NS 200</td>
+                        <td>10</td>
+                        <td>2</td>
+                    </tr>
+                    <tr>
+                        <td>TVS N TORQUE</td>
+                        <td>7</td>
+                        <td>2</td>
+                    </tr>
+
+                </table>
+            </div>
+            <br>
+
+            <h2>ADDITIONAL CHARGES</h2>
+            <div>
+                <table class="D_charge" border="2px">
+                    <tr>
+                        <td>Driver Charge</td>
+                        <td>1000 per day</td>
+                    </tr>
+                    <tr>
+                        <td>Staying Charge</td>
+                        <td>1000 per day</td>
+                    </tr>
+                </table>
+                <br>
+            </div>
+            <p style="font-family: 'Noto Sans', sans-serif;">The above table is the Fare Details of the all cars and
+                bikes available at the current position.
+                You can choose any of them<strong>(one or more than one)</strong> according to your's need, capacity and
+                likes.
+                You can select cars with Driver also or without Driver.</p>
+            <p style="font-family: 'Noto Sans', sans-serif;">For example if you choose <strong>HONDA CITY</strong> with
+                Driver then you wil left with the
+                <strong> 4 vacant seat</strong> and if the vachicle had ran 400 Km the you fare will be calculated
+                below:
+            </p>
+            <table>
+                <tr>
+                    <td>Reading of car ran(in Km) :</td>
+                    <td><b>400</b></td>
+                </tr>
+                <tr>
+                    <td>Driver's Charge :</td>
+                    <td><b>1000</b></td>
+                </tr>
+                <tr>
+                    <td>Staying Charge :</td>
+                    <td><b>0</b></td>
+                </tr>
+                <tr>
+                    <td>Car's fare (per Km) :</td>
+                    <td><b>15</b></td>
+                </tr>
+                <tr>
+                    <td>Total amount payable : </td>
+                    <td>(400 X 15) + 1000 + 0 = <b>7000</b></td>
+                </tr>
+            </table>
+            <br>
+        </div>
+
+        <div class="ads">
+            <h2 class="text">Ads Section</h2>
+            <div>
+                <img class="demo_image" src="images\demo6.jpg">
+            </div><br>
+            <div>
+                <img class="demo_image" src="images\demo7.jpg">
+            </div><br>
+            <div>
+                <img class="demo_image" src="images\demo8.jpg">
+            </div><br>
+            <div>
+                <img class="demo_image" src="images\demo9.jpg">
+            </div><br>
+            <div>
+                <img class="demo_image" src="images\demo3.jpg">
+            </div><br>
+            <div>
+                <img class="demo_image" src="images\demo2.jpg">
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+
+        <br><br>
+        <table class="table2">
+            <tr>
+                <td>Contact Us:</td>
+                <td>9377777xx , 632488xxx</td>
+            </tr>
+            <tr>
+                <td>e-mail Us: </td>
+                <td>infratech@gmail.com</td>
+            </tr>
+            <tr>
+                <td>Address: </Address>
+                </td>
+                <td>4th Floor Easter Mall, Circular Road, Lalpur Ranchi-834002</td>
+            </tr>
+        </table>
+        <br><br>
+        Copyright &copy; reserved at Drive Away
+    </div>
+
+</body>
+
+</html>

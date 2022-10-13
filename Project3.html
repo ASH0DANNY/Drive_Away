@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Drive_Away.com</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    .header {
+      /* position: fixed; */
+      z-index: 1;
+    }
+
+    .head {
+      font-family: cursive;
+      background-color: black;
+      color: white;
+      padding: 1px;
+      font-size: 2vw;
+      text-align: center;
+    }
+
+    .left {
+      float: left;
+      width: 15%;
+      height: 80vh;
+      text-align: center;
+    }
+
+    .text {
+      font-size: 2vw;
+    }
+
+    .menu {
+      background-color: lightslategrey;
+      height: 6.155vh;
+      padding: 9px;
+      /* margin-top: 5px; */
+      display: block;
+      width: 100%;
+    }
+
+    a {
+      text-decoration: none;
+      padding: 8px;
+      font-size: 1.2vw;
+      color: black;
+    }
+
+    a:hover {
+      color: white;
+    }
+
+    .a_gethelp {
+      position: relative;
+      display: inline-block;
+    }
+
+    .get_help_dropdown {
+      display: none;
+      position: absolute;
+      background-color: black;
+      min-width: 180px;
+      box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+      padding: 12px 16px;
+      z-index: 1;
+    }
+
+    .a_gethelp:hover .get_help_dropdown {
+      display: inline-grid;
+    }
+
+    .get_help_dropdown a:hover {
+      color: black;
+      background-color: rgb(203, 203, 203);
+    }
+
+    .get_help_dropdown a {
+      color: white;
+    }
+
+    .a_contact {
+      position: relative;
+      display: inline-block;
+    }
+
+    .contact_dropdown {
+      display: none;
+      position: absolute;
+      background-color: black;
+
+      min-width: 150px;
+      padding: 12px 16px;
+      z-index: 1;
+    }
+
+    .contact_dropdown a {
+      color: white;
+    }
+
+    .a_contact:hover .contact_dropdown {
+      display: inline-grid;
+    }
+
+    .contact_dropdown a:hover {
+      color: black;
+      background-color: rgb(203, 203, 203);
+    }
+
+    .image {
+      width: 100%;
+      height: 35vw;
+      background-size: contain;
+      background-repeat: no-repeat;
+      /* opacity:0.3; used to fade the background */
+    }
+
+    .container_body {
+      position: relative;
+
+    }
+
+    .para {
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      padding: 2vw;
+      color: ivory;
+      font-family: monospace;
+      font-size: 1.2vw;
+      font-display: fixed;
+      background-color: rgb(255, 250, 250, 0.3);
+      border-bottom-right-radius: 400px;
+      width: 27%;
+      height: 55%;
+      /* height: -webkit-fill-available; */
+    }
+
+    .para:hover {
+      width: 50%;
+      height: 100%;
+      transition-duration: 1.5s;
+      padding: 22px;
+    }
+
+    ul {
+      padding: 5px;
+    }
+
+    .form_body {
+      position: relative;
+      text-align: -webkit-center;
+    }
+
+    form {
+      width: 70%;
+      height: auto;
+      border: solid;
+      background-color: slategray;
+      border-radius: 40px;
+      text-align: center;
+    }
+
+    .main {
+      float: left;
+      width: 70%;
+      font-size: 1.5vw;
+      padding: 0 20px;
+    }
+
+    .table2 {
+      width: 40%;
+      font-size: 1vw;
+      text-align: left;
+    }
+
+
+    /* .select{
+    background-color: darkslategray;
+    display:flex;
+    width:70%;
+    justify-content: center;
+    padding:20px;
+} */
+
+    .ads {
+      background-color: lightgray;
+      float: left;
+      height: 780px;
+      width: 15%;
+      padding: 15px;
+      margin-top: 7px;
+      text-align: center;
+    }
+
+    .footer {
+      background-color: black;
+      color: white;
+      text-align: center;
+      height: auto;
+      padding: 2vw;
+      margin-top: 7px;
+    }
+
+    @media only screen and (max-width: 580px) {
+      .main {
+        width: 100%;
+      }
+
+      .menu {
+        height: 6vw;
+        padding: 0;
+      }
+
+      .ads {
+        width: 80vw;
+        height: 40vw;
+        margin-left: 8vw;
+      }
+
+      a {
+        padding: 3px;
+      }
+
+    }
+  </style>
+</head>
+
+<body style="font-family:Verdana;color:black;">
+
+  <div class="header">
+    <div class="head">
+      <h1>Car And Bike Rental</h1>
+    </div>
+
+
+    <div class="menu">
+      <a class="a_home" href="Project3.html">Home</a>
+      <a href="#">About</a>
+      <div class="a_contact">
+        <a href="#">Contact</a>
+        <div class="contact_dropdown">
+          <a href="#">Mob No.</a>
+          <a href="#">Email</a>
+          <a href="#">Social Media</a>
+        </div>
+      </div>
+      <div class="a_gethelp">
+        <a href="#">Get Help</a>
+        <div class="get_help_dropdown">
+          <a href="fair_details.html">Fair Details</a>
+          <a href="driver_details.html">Driver Details</a>
+          <a href="Facilities.html">Facilities</a>
+          <a href="#">Bookings History</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="overflow:auto">
+    <div class="container_body">
+      <!-- <img class="image" src="movingtraffic4.gif"> -->
+      <img class="image" src="images/traffic1.jpg">
+      <div class="para">
+        <ul>
+          <li><strong>50% OFF ON FIRST BOOKING</strong></li>
+          <li><strong>UPTO 10% OFF ON EVERY BOOKINGS</strong></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="ads">
+      <h2 class="text">Menu Section</h2>
+    </div>
+
+    <div class="main">
+      <div class="form_body">
+        <form>
+          <h3>SEARCH YOUR TRIP</h3><br>
+          <div>
+            FROM <select class="option" name="FROM">
+              <option disabled="disable" selected="selected">--chose option--</option>
+              <option>Ladakh</option>
+              <option>Arunachal Pradesh</option>
+              <option>Bihar</option>
+              <option>New Delhi</option>
+              <option>Jharkhand</option>
+              <option>Madhaya Pradesh</option>
+              <option>Gujarat</option>
+              <option>Rajesthan</option>
+              <option>Maharastra</option>
+              <option>Oddissa</option>
+              <option>Andhra Pradesh</option>
+              <option>Goa</option>
+              <option>Tamil Nadu</option>
+              <option>Kerala</option>
+            </select>
+          </div><br>
+          <div>
+            <img src="images/twoway.png" alt="Direction Image Loading" height="50px" width="60px">
+          </div><br>
+          <div>
+            TO <select class="option" name="FROM">
+              <option disabled="disable" selected="selected">--chose option--</option>
+              <option>Ladakh</option>
+              <option>Arunachal Pradesh</option>
+              <option>Bihar</option>
+              <option>New Delhi</option>
+              <option>Jharkhand</option>
+              <option>Madhaya Pradesh</option>
+              <option>Gujarat</option>
+              <option>Rajesthan</option>
+              <option>Maharastra</option>
+              <option>Oddissa</option>
+              <option>Andhra Pradesh</option>
+              <option>Goa</option>
+              <option>Tamil Nadu</option>
+              <option>Kerala</option>
+            </select>
+          </div><br>
+          <div>
+            <label for="passanger">NO. OF PASSANGERS</label>
+            <input type="number" id="passanger" name="passangers" value="passangers_count">
+          </div><br>
+          <div>
+            WITH DRIVER
+            <input type="checkbox" id="driver" name="With_Drivar" value="Yes">
+            <label for="driver">YES</label>
+          </div><br>
+          <div>
+            <input type="button" value="SEARCH">
+            <input type="reset" value="RESET">
+          </div><br>
+        </form>
+      </div>
+      <h2>About Website</h2>
+      <p>CSS is a modern framework with support for desktop, tablet, and mobile design by default.</p>
+
+
+      <br>
+    </div>
+
+    <div class="ads">
+      <h2 class="text">Ads Section</h2>
+    </div>
+  </div>
+
+  <div class="footer">
+
+    <br><br>
+    <table class="table2">
+      <tr>
+        <td>Contact Us:</td>
+        <td>9377777xx , 632488xxx</td>
+      </tr>
+      <tr>
+        <td>e-mail Us: </td>
+        <td>infratech@gmail.com</td>
+      </tr>
+      <tr>
+        <td>Address: </Address>
+        </td>
+        <td>4th Floor Easter Mall, Circular Road, Lalpur Ranchi-834002</td>
+      </tr>
+    </table>
+    <br><br>
+    Copyright &copy; reserved at Drive Away
+  </div>
+
+</body>
+
+</html>

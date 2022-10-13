@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Facilities</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        header {
+            /* position: ; */
+        }
+
+        .head {
+            font-family: cursive;
+            background-color: black;
+            color: white;
+            padding: 1px;
+            font-size: 2vw;
+            text-align: center;
+        }
+
+        .left {
+            float: left;
+            width: 15%;
+            height: 80vh;
+            text-align: center;
+        }
+
+        .text {
+            font-size: 2vw;
+        }
+
+        .menu {
+            background-color: lightslategrey;
+            height: 6.155vh;
+            padding: 9px;
+            /* margin-top: 5px; */
+            display: block;
+            width: 100%;
+        }
+
+        a {
+            text-decoration: none;
+            padding: 8px;
+            font-size: 1.2vw;
+            color: black;
+        }
+
+        a:hover {
+            color: white;
+        }
+
+        .a_gethelp {
+            position: relative;
+            display: inline-block;
+        }
+
+        .get_help_dropdown {
+            display: none;
+            position: absolute;
+            background-color: black;
+            min-width: 180px;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            padding: 12px 16px;
+            z-index: 1;
+        }
+
+        .a_gethelp:hover .get_help_dropdown {
+            display: inline-grid;
+        }
+
+        .get_help_dropdown a:hover {
+            color: black;
+            background-color: rgb(203, 203, 203);
+        }
+
+        .get_help_dropdown a {
+            color: white;
+        }
+
+        .a_contact {
+            position: relative;
+            display: inline-block;
+        }
+
+        .contact_dropdown {
+            display: none;
+            position: absolute;
+            background-color: black;
+
+            min-width: 150px;
+            padding: 12px 16px;
+            z-index: 1;
+        }
+
+        .contact_dropdown a {
+            color: white;
+        }
+
+        .a_contact:hover .contact_dropdown {
+            display: inline-grid;
+        }
+
+        .contact_dropdown a:hover {
+            color: black;
+            background-color: rgb(203, 203, 203);
+        }
+
+        .image {
+            width: 100%;
+            height: 35vw;
+            background-size: contain;
+            background-repeat: no-repeat;
+            /* opacity:0.3; used to fade the background */
+        }
+
+        .container_body {
+            position: relative;
+
+        }
+
+        .para {
+            position: absolute;
+            top: 0px;
+            left: 0px;
+            padding: 2vw;
+            color: ivory;
+            font-family: monospace;
+            font-size: 1.2vw;
+            font-display: fixed;
+            background-color: rgb(255, 250, 250, 0.3);
+            border-bottom-right-radius: 400px;
+            width: 27%;
+            height: 55%;
+            /* height: -webkit-fill-available; */
+        }
+
+        .para:hover {
+            width: 50%;
+            height: 100%;
+            transition-duration: 1.5s;
+            padding: 22px;
+        }
+
+        ul {
+            padding: 5px;
+        }
+
+        .form_body {
+            position: relative;
+            text-align: -webkit-center;
+        }
+
+        form {
+            width: 70%;
+            height: auto;
+            border: solid;
+            background-color: slategray;
+            border-radius: 40px;
+            text-align: center;
+        }
+
+        .main {
+            float: left;
+            width: 70%;
+            /*width:70%;*/
+            margin-top: 5px;
+            margin-bottom: 5px;
+            font-size: 1.5vw;
+            padding: 0 20px;
+        }
+
+        .main h1,h2,h3 {
+            font-family: 'Noto Serif', serif;
+        }
+
+        .h2f {
+            background-color: rgb(197, 195, 195);
+            height: auto;
+            padding: 1px;
+            margin: 30px;
+            width: auto;
+            box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .table2 {
+            width: 40%;
+            font-size: 1vw;
+            text-align: left;
+        }
+
+        .hygiene,.safety,.track {
+            border-radius: 30px;
+            border-style: solid;
+            box-shadow: 15px 17px 11px 0px rgba(0, 0, 0, 0.2);
+            margin-top: 20px;
+            z-index: 1;
+            padding: 15px;
+        }
+        
+
+        .ads {
+            background-color: lightgray;
+            float: left;
+            height: 1300px;
+            width: 15%;
+            padding: 15px;
+            margin-top: 7px;
+            text-align: center;
+        }
+
+        .footer {
+            background-color: black;
+            color: white;
+            text-align: center;
+            height: auto;
+            padding: 2vw;
+            margin-top: 7px;
+        }
+
+        @media only screen and (max-width: 580px) {
+            .main {
+                width: 100%;
+            }
+
+            .menu {
+                height: 6vw;
+                padding: 0;
+            }
+
+            .ads {
+                width: 80vw;
+                height: 40vw;
+                margin-left: 8vw;
+            }
+
+            a {
+                padding: 3px;
+            }
+
+        }
+    </style>
+</head>
+
+<body style="font-family:Verdana;color:black;">
+
+    <div class="header">
+        <div class="head">
+            <h1>Car And Bike Rental</h1>
+        </div>
+
+        <div class="menu">
+            <a class="a_home" href="Project3.html">Home</a>
+            <a href="#">About</a>
+            <div class="a_contact">
+                <a href="#">Contact</a>
+                <div class="contact_dropdown">
+                    <a href="#">Mob No.</a>
+                    <a href="#">Email</a>
+                    <a href="#">Social Media</a>
+                </div>
+            </div>
+            <div class="a_gethelp">
+                <a href="#">Get Help</a>
+                <div class="get_help_dropdown">
+                    <a href="fair_details.html">Fair Details</a>
+                    <a href="driver_details.html">Driver Details</a>
+                    <a href="Facilities.html">Facilities</a>
+                    <a href="#">Bookings History</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div style="overflow:auto">
+        <div class="ads">
+            <h2 class="text">Menu Section</h2>
+        </div>
+        <div class="main">
+            <div class="h2f">
+                <h2>Features & Facilities Provided By Us</h2>
+            </div>
+            <p style="font-family: 'Noto Sans', sans-serif;">Taxi cab service has become very popular now a days. The
+                way it has grown in the market is very
+                commanding. At least one person from a household would have used a cab service in recent times. Most of
+                the things in cab services are advanced in technology wise. One most important thing that many of these
+                cab services is lacking is the GPS tracking. Most of the cab services now are depending on a phone call
+                when they have to track their colleagues. This is wasting a lot a time and in long time it has its
+                effect financially also. When is there is no definite track of the cars there is a lot of chances for
+                unnecessary transport of a car due to lack of information about all the cars.</p>
+        
+            <div class="hygiene">
+                <u>
+                    <h3>Hygiene</h3>
+                </u>
+                <p style="font-family: 'Noto Sans', sans-serif;">As you are aware, the COVID 19 pandemic has led to
+                    unprecedented and unanticipated challenges
+                    requiring
+                    collective action and support from al spread of Novel Corona Virus (COVID 19) are being
+                    effectively
+                    led
+                    by the Central Government and State Governments, there is a need to reinforce the importance of
+                    preventive measures and practices in a sustained manner, to deal with the disease over the long
+                    run.
+                </p>
+            </div>
+            <div class="safety">
+                <u>
+                    <h3>Safety</h3>
+                </u>
+                <p style="font-family: 'Noto Sans', sans-serif;">If you are looking for car's safety you you will
+                    get the following
+                    standard safety gears and features.</p>
+                <ol style="font-family: 'Noto Sans', sans-serif;">
+                    <li>Airbags</li>
+                    <li>Brake assist</li>
+                    <li>Forward-collision warning (FCW)</li>
+                    <li>Stability control</li>
+                    <li>Anti-lock braking systems</li>
+                </ol>
+            </div>
+            <div class="track">
+                <u>
+                    <h3>Traking Facility</h3>
+                </u>
+                <p style="font-family: 'Noto Sans', sans-serif;">GPS tracking can make life easier by giving quick
+                    options to the cab service representative. This is
+                    the
+                    best alternative for them to speed up their process and make sure customer stays with them. By
+                    introducing a GPS tracking in all the cars it is easy for a cab service representative to find
+                    out
+                    where
+                    all the cars are and when a customer calls them regarding a pick up from a certain location, the
+                    representative can give the estimated time to the customer immediately and also inform the
+                    nearest
+                    driver to go to the pickup location. This process definitely saves a lot of time for cab service
+                    representative, customer and the cab driver.</p><br>
+            </div>
+        </div>
+        <div class="ads">
+            <h2 class="text">Menu Section</h2>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        <table class="table2">
+            <tr>
+                <td>Contact Us:</td>
+                <td>9377777xx , 632488xxx</td>
+            </tr>
+            <tr>
+                <td>e-mail Us: </td>
+                <td>infratech@gmail.com</td>
+            </tr>
+            <tr>
+                <td>Address: </td>
+                <td>4th Floor Easter Mall, Circular Road, Lalpur Ranchi-834002</td>
+            </tr>
+        </table>
+        <br><br>
+        Copyright &copy; reserved at Drive Away
+    </div>
+
+</body>
+
+</html>
