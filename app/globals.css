@@ -1,5 +1,80 @@
 @import "tailwindcss";
 
+@layer base {
+  :root {
+    --primary: #000000;
+    --secondary: #6B7280;
+    --light: #F3F4F6;
+    --lighter: #FFFFFF;
+    --accent: #1F2937;
+    --text-primary: #111827;
+    --text-secondary: #6B7280;
+    --border: #E5E7EB;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-white text-gray-900 font-sans;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-black text-white rounded-lg font-semibold hover:bg-gray-900 transition-colors duration-300;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-3 bg-gray-100 text-black rounded-lg font-semibold hover:bg-gray-200 transition-colors duration-300 border border-gray-300;
+  }
+
+  .btn-outline {
+    @apply px-6 py-3 bg-white text-black rounded-lg font-semibold hover:bg-gray-50 transition-colors duration-300 border-2 border-black;
+  }
+
+  .section-title {
+    @apply text-4xl md:text-5xl font-bold text-gray-900 mb-4;
+  }
+
+  .section-subtitle {
+    @apply text-lg text-gray-600 mb-12;
+  }
+
+  .card {
+    @apply bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-300;
+  }
+
+  .container-section {
+    @apply max-w-7xl mx-auto px-4 py-16 md:py-24;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-black transition-colors;
+  }
+
+  .badge {
+    @apply inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-semibold;
+  }
+}
+
+/* Smooth animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;

@@ -1,0 +1,312 @@
+/* Scroll Animation Styles */
+
+/* Fade In Animation */
+[data-animate="fade-in"],
+.scroll-animate.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.6s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Slide In From Left */
+[data-animate="slide-left"],
+.scroll-animate.slide-left {
+  opacity: 0;
+  transform: translateX(-30px);
+  animation: slideInLeft 0.6s ease-out forwards;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide In From Right */
+[data-animate="slide-right"],
+.scroll-animate.slide-right {
+  opacity: 0;
+  transform: translateX(30px);
+  animation: slideInRight 0.6s ease-out forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Slide In From Top */
+[data-animate="slide-up"],
+.scroll-animate.slide-up {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: slideInUp 0.6s ease-out forwards;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide In From Bottom */
+[data-animate="slide-down"],
+.scroll-animate.slide-down {
+  opacity: 0;
+  transform: translateY(-30px);
+  animation: slideInDown 0.6s ease-out forwards;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale In */
+[data-animate="scale"],
+.scroll-animate.scale {
+  opacity: 0;
+  transform: scale(0.9);
+  animation: scaleIn 0.6s ease-out forwards;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Rotate In */
+[data-animate="rotate"],
+.scroll-animate.rotate {
+  opacity: 0;
+  transform: rotate(-10deg);
+  animation: rotateIn 0.6s ease-out forwards;
+}
+
+@keyframes rotateIn {
+  from {
+    opacity: 0;
+    transform: rotate(-10deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(0);
+  }
+}
+
+/* Bounce In */
+[data-animate="bounce"],
+.scroll-animate.bounce {
+  opacity: 0;
+  animation: bounceIn 0.7s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+@keyframes bounceIn {
+  from {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Flash In */
+[data-animate="flash"],
+.scroll-animate.flash {
+  opacity: 0;
+  animation: flashIn 0.6s ease-in forwards;
+}
+
+@keyframes flashIn {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Zoom In */
+[data-animate="zoom"],
+.scroll-animate.zoom {
+  opacity: 0;
+  transform: scale(0.5);
+  animation: zoomIn 0.6s ease-out forwards;
+}
+
+@keyframes zoomIn {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Delay animations */
+[data-animate-delay="100"] {
+  animation-delay: 0.1s;
+}
+
+[data-animate-delay="200"] {
+  animation-delay: 0.2s;
+}
+
+[data-animate-delay="300"] {
+  animation-delay: 0.3s;
+}
+
+[data-animate-delay="400"] {
+  animation-delay: 0.4s;
+}
+
+[data-animate-delay="500"] {
+  animation-delay: 0.5s;
+}
+
+/* Stagger effect for multiple items */
+[data-animate-stagger] {
+  --stagger-index: 0;
+  animation-delay: calc(var(--stagger-index) * 0.1s);
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Animation In class for JS-triggered animations */
+.animate-in {
+  animation: fadeIn 0.6s ease-in-out forwards;
+}
+
+/* Reveal effect */
+.reveal {
+  position: relative;
+  overflow: hidden;
+}
+
+.reveal::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), transparent);
+  animation: reveal 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes reveal {
+  from {
+    left: -100%;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+/* Parallax effect helper */
+.parallax {
+  position: relative;
+  overflow: hidden;
+}
+
+.parallax-content {
+  transition: transform 0.3s ease-out;
+}
+
+/* Intersection Observer based animations */
+[data-animate].animate-in {
+  animation: fadeIn 0.6s ease-in-out forwards !important;
+}
+
+/* Animation for content cards */
+.content-card {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.content-card.animate-in {
+  animation: slideInUp 0.6s ease-out forwards;
+}
+
+/* Stagger effect for lists */
+.stagger-container > * {
+  opacity: 0;
+}
+
+.stagger-container.animate-in > * {
+  animation: slideInUp 0.6s ease-out forwards;
+}
+
+.stagger-container > *:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.stagger-container > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.stagger-container > *:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.stagger-container > *:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+.stagger-container > *:nth-child(5) {
+  animation-delay: 0.4s;
+}
+
+.stagger-container > *:nth-child(n + 6) {
+  animation-delay: 0.5s;
+}
