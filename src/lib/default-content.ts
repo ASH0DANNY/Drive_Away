@@ -191,6 +191,8 @@ export type Vehicle = {
   rating: number;
   location: string;
   available: boolean;
+  description?: string;
+  features?: string[];
 };
 
 export const defaultVehicles: Vehicle[] = [
@@ -207,6 +209,9 @@ export const defaultVehicles: Vehicle[] = [
     rating: 4.7,
     location: "Patna",
     available: true,
+    description:
+      "A nimble city hatchback that's easy to park and cheap to run — the default pick for daily errands or a weekend out of town.",
+    features: ["Air conditioning", "Bluetooth audio", "Reverse camera", "USB charging"],
   },
   {
     id: "sample-car-2",
@@ -221,6 +226,43 @@ export const defaultVehicles: Vehicle[] = [
     rating: 4.8,
     location: "Bengaluru",
     available: true,
+    description:
+      "A comfortable automatic sedan built for longer drives — quiet cabin, generous boot space, and enough legroom for four adults.",
+    features: ["Air conditioning", "Cruise control", "Touchscreen infotainment", "Sunroof"],
+  },
+  {
+    id: "sample-car-3",
+    type: "car",
+    name: "Basecamp SUV",
+    category: "SUV",
+    pricePerDay: 3299,
+    images: [],
+    transmission: "Automatic",
+    fuel: "Diesel",
+    seats: 7,
+    rating: 4.9,
+    location: "Delhi",
+    available: true,
+    description:
+      "A 7-seat SUV with real ground clearance — the one to book for a group trip that leaves the highway at some point.",
+    features: ["4x4 mode", "Roof rails", "Rear AC vents", "Touchscreen infotainment"],
+  },
+  {
+    id: "sample-car-4",
+    type: "car",
+    name: "Currentline EV",
+    category: "Electric Sedan",
+    pricePerDay: 2799,
+    images: [],
+    transmission: "Automatic",
+    fuel: "Electric",
+    seats: 5,
+    rating: 4.6,
+    location: "Bengaluru",
+    available: true,
+    description:
+      "Fully electric, near-silent, and the cheapest per-kilometre option in the fleet. Comes with a charged battery and a charging-hub map.",
+    features: ["Fast charging", "Regenerative braking", "App-based climate preheat"],
   },
   {
     id: "sample-bike-1",
@@ -235,6 +277,9 @@ export const defaultVehicles: Vehicle[] = [
     rating: 4.6,
     location: "Pune",
     available: true,
+    description:
+      "A torquey cruiser that's comfortable two-up on a highway stretch. Comes with a spare helmet and a top box on request.",
+    features: ["Spare helmet included", "Top box on request", "Disc brakes"],
   },
   {
     id: "sample-bike-2",
@@ -249,5 +294,42 @@ export const defaultVehicles: Vehicle[] = [
     rating: 4.5,
     location: "Delhi",
     available: true,
+    description:
+      "A lightweight electric scooter built for short city hops — no gears, no fuel stops, and near-silent at every speed.",
+    features: ["USB charging port", "Under-seat storage", "Anti-theft alarm"],
+  },
+  {
+    id: "sample-bike-3",
+    type: "bike",
+    name: "Switchback 250",
+    category: "Adventure",
+    pricePerDay: 999,
+    images: [],
+    transmission: "Manual",
+    fuel: "Petrol",
+    seats: 2,
+    rating: 4.7,
+    location: "Manali",
+    available: true,
+    description:
+      "Built for broken roads and long altitude climbs — the bike people actually book for a mountain-pass trip.",
+    features: ["Long-travel suspension", "Crash guards", "Panniers on request"],
+  },
+  {
+    id: "sample-bike-4",
+    type: "bike",
+    name: "Streetform 125",
+    category: "Commuter",
+    pricePerDay: 349,
+    images: [],
+    transmission: "Manual",
+    fuel: "Petrol",
+    seats: 2,
+    rating: 4.4,
+    location: "Patna",
+    available: true,
+    description:
+      "The everyday commuter — light, fuel-efficient, and easy to handle in dense traffic. The cheapest way to get around by two wheels.",
+    features: ["High mileage", "Digital speedometer", "Bluetooth connectivity"],
   },
 ];

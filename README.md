@@ -1,41 +1,32 @@
-# Drive Away — Phase 1: Foundation + Public Homepage
+# Drive Away — Phase 1 + 2: Foundation, Homepage, Fleet & Vehicle Detail
 
-This is Phase 1 of the full build. It includes the project foundation and a
-complete, animated homepage. Auth, the fleet/booking pages, dummy payment
-flow, and the admin dashboard are the next phases (see bottom of this file).
+Phase 1 (foundation + homepage) and Phase 2 (fleet listing + vehicle detail
+pages) are done. Auth, the real booking + dummy payment flow, and the admin
+dashboard are next (see bottom of this file).
 
-## What's in this phase
+## What's new in Phase 2
 
-- Next.js 16 (App Router) + TypeScript + Tailwind v4
-- Hand-built shadcn-style UI primitives (Button, Card, Badge, Sheet,
-  Separator, Skeleton, Sonner toasts) — the shadcn CLI registry wasn't
-  reachable from the build sandbox, so these were written by hand following
-  the exact same conventions shadcn generates. They behave identically and
-  `npx shadcn@latest add <component>` will still work for you locally to
-  add more.
-- Firebase (Auth + Firestore) wired up with your project credentials in
-  `.env.local`
-- Full design-token theme system in `src/app/globals.css` — see "Theme
-  system" below
-- Live-editable site content via `src/context/site-config-context.tsx`,
-  backed by Firestore doc `siteConfig/main`, with hardcoded defaults in
-  `src/lib/default-content.ts` so the site is never blank/unstyled on
-  first load, even before Firestore responds or if it's offline
-- Signature scroll animation: a dashed "route line" runs down the homepage
-  spine with a marker that travels along it as you scroll
-  (`src/components/site/route-spine.tsx`)
-- Scroll-reveal, draggable hero cards, animated nav, animated theme toggle
-  (Framer Motion throughout)
-- Sample fleet fallback (`defaultVehicles`) so vehicle grids are never
-  empty before the real `vehicles` Firestore collection has data
+- `/fleet` — full listing with a type toggle (All/Car/Bike), search, city
+  filter, and sort (recommended/price/rating), all client-side over the
+  live `vehicles` collection. Empty-state card if filters match nothing.
+- `/fleet/[id]` — vehicle detail page: image gallery with thumbnails
+  (graceful placeholder when no Cloudinary images are set yet), specs,
+  description, feature list, a live booking widget (date range → day
+  count → price breakdown with service fee + refundable deposit), and a
+  "more like this" row.
+- `/booking/[id]` — placeholder for now. The Reserve button already routes
+  here with the selected dates in the URL; this becomes the real
+  checkout + dummy payment gateway in the next phase, so nothing dead-ends
+  in the meantime.
+- Sample fleet expanded to 8 vehicles (4 cars, 4 bikes) with descriptions
+  and feature lists, so the fallback data now exercises every part of the
+  detail page even before Firestore has real listings.
+- New shadcn-style primitives: Input, Label, Tabs, Select (Radix-based,
+  same conventions as Phase 1).
 
-## Design direction ("The Route")
-
-- Palette: Asphalt (#14161A) / Cloud (#F6F5F2) neutrals, Route Amber
-  (#FFB020) primary, Ignition Teal (#12A594) secondary
-- Type: Space Grotesk (display) + Inter (body) + JetBrains Mono (prices,
-  data, stats)
-- Signature element: the route-line scroll spine described above
+## Everything from Phase 1 still applies
+See the "Getting it running", "Design direction", "Theming, explained",
+and Cloudinary/Firebase setup notes below — unchanged.
 
 ## Getting it running
 
@@ -90,14 +81,14 @@ that same Firestore doc — every connected browser updates live.
 
 ## Next phases
 
-1. **Fleet + vehicle detail pages** — filters, search, sort, gallery
-2. **Auth** — email/password with Firebase email verification, Google
+1. **Auth** — email/password with Firebase email verification, Google
    sign-in, protected "My Bookings"
-3. **Booking flow + dummy payment** — checkout, fake payment gateway page,
-   payment-approve/result page, Firestore booking record
-4. **Admin dashboard** (shadcn-heavy) — Content Manager, Theme Manager
+2. **Booking flow + dummy payment** — real checkout page, fake payment
+   gateway page, payment-approve/result page, Firestore booking record
+   (replaces the `/booking/[id]` placeholder)
+3. **Admin dashboard** (shadcn-heavy) — Content Manager, Theme Manager
    (live color/contrast/font/radius editor), Fleet Manager (Cloudinary
    upload), Bookings Manager, Users Manager, all behind Firebase Auth +
    role check
-5. **Polish + deploy** — responsiveness pass, Vercel deploy, Firestore
+4. **Polish + deploy** — responsiveness pass, Vercel deploy, Firestore
    Security Rules
