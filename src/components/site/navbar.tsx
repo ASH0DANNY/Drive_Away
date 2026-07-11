@@ -3,21 +3,36 @@
 import * as React from "react";
 import Link from "next/link";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
-import { Menu, ArrowUpRight } from "lucide-react";
+import { Menu, ArrowUpRight, LogOut, Ticket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/site/mode-toggle";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useSiteConfig } from "@/context/site-config-context";
+import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const { config } = useSiteConfig();
+  const { user, signOut } = useAuth();
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = React.useState(false);
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     setScrolled(latest > 24);
   });
+
+  const initials = user?.displayName
+    ? user.displayName.split(" ").map((s) => s[0]).slice(0, 2).join("").toUpperCase()
+    : user?.email?.[0].toUpperCase() ?? "U";
 
   return (
     <motion.header
@@ -55,9 +70,34 @@ export function Navbar() {
 
         <div className="hidden md:flex items-center gap-2">
           <ModeToggle />
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/login">Sign in</Link>
-          </Button>
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="ml-1 rounded-full outline-none ring-offset-2 ring-offset-background focus-visible:ring-2 focus-visible:ring-ring">
+                  <Avatar>
+                    <AvatarImage src={user.photoURL ?? undefined} alt={user.displayName ?? "Account"} />
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel className="truncate">{user.email}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/my-bookings">
+                    <Ticket className="size-4" /> My bookings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" onClick={() => signOut()}>
+                  <LogOut className="size-4" /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/login">Sign in</Link>
+            </Button>
+          )}
           <Button size="sm" asChild>
             <Link href="/fleet">
               Browse fleet <ArrowUpRight className="size-3.5" />
@@ -90,11 +130,28 @@ export function Navbar() {
                 ))}
               </nav>
               <div className="mt-6 flex flex-col gap-2">
-                <SheetClose asChild>
-                  <Button variant="outline" asChild>
-                    <Link href="/login">Sign in</Link>
-                  </Button>
-                </SheetClose>
+                {user ? (
+                  <>
+                    <SheetClose asChild>
+                      <Button variant="outline" asChild>
+                        <Link href="/my-bookings">
+                          <Ticket className="size-4" /> My bookings
+                        </Link>
+                      </Button>
+                    </SheetClose>
+                    <SheetClose asChild>
+                      <Button variant="ghost" onClick={() => signOut()}>
+                        <LogOut className="size-4" /> Sign out
+                      </Button>
+                    </SheetClose>
+                  </>
+                ) : (
+                  <SheetClose asChild>
+                    <Button variant="outline" asChild>
+                      <Link href="/login">Sign in</Link>
+                    </Button>
+                  </SheetClose>
+                )}
                 <SheetClose asChild>
                   <Button asChild>
                     <Link href="/fleet">Browse fleet</Link>

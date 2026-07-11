@@ -1,32 +1,51 @@
-# Drive Away — Phase 1 + 2: Foundation, Homepage, Fleet & Vehicle Detail
+# Drive Away — Phase 1–3: Foundation, Homepage, Fleet, Auth, Booking & Dummy Payment
 
-Phase 1 (foundation + homepage) and Phase 2 (fleet listing + vehicle detail
-pages) are done. Auth, the real booking + dummy payment flow, and the admin
-dashboard are next (see bottom of this file).
+Phases 1–3 are done: foundation + homepage, fleet + vehicle detail, and now
+full auth with a real booking → dummy payment → confirmation flow. The
+admin dashboard is next (see bottom of this file).
 
-## What's new in Phase 2
+## What's new in Phase 3
 
-- `/fleet` — full listing with a type toggle (All/Car/Bike), search, city
-  filter, and sort (recommended/price/rating), all client-side over the
-  live `vehicles` collection. Empty-state card if filters match nothing.
-- `/fleet/[id]` — vehicle detail page: image gallery with thumbnails
-  (graceful placeholder when no Cloudinary images are set yet), specs,
-  description, feature list, a live booking widget (date range → day
-  count → price breakdown with service fee + refundable deposit), and a
-  "more like this" row.
-- `/booking/[id]` — placeholder for now. The Reserve button already routes
-  here with the selected dates in the URL; this becomes the real
-  checkout + dummy payment gateway in the next phase, so nothing dead-ends
-  in the meantime.
-- Sample fleet expanded to 8 vehicles (4 cars, 4 bikes) with descriptions
-  and feature lists, so the fallback data now exercises every part of the
-  detail page even before Firestore has real listings.
-- New shadcn-style primitives: Input, Label, Tabs, Select (Radix-based,
-  same conventions as Phase 1).
+**Auth**
+- Email/password sign-up (triggers Firebase's built-in verification email)
+  and sign-in, plus Google sign-in — all via `src/context/auth-context.tsx`
+- Every signed-in user gets a `users/{uid}` Firestore doc created on first
+  login, defaulted to `role: "customer"` (see `src/lib/user-doc.ts`) — this
+  is what the admin dashboard will use for role checks later
+- Password reset (forgot-password on the login page)
+- A dismiss-proof banner prompts unverified users to confirm their email,
+  with a resend button (`src/components/site/verify-banner.tsx`)
+- Navbar swaps between Sign in / an avatar dropdown (My bookings, Sign out)
+  based on auth state
 
-## Everything from Phase 1 still applies
-See the "Getting it running", "Design direction", "Theming, explained",
-and Cloudinary/Firebase setup notes below — unchanged.
+**Booking + dummy payment flow**
+- `/booking/[id]` is now the real checkout: driver details form, terms
+  checkbox, live price summary, gated behind sign-in and email
+  verification. Submitting creates a `bookings` Firestore document.
+- `/payment/[id]` — the dummy payment gateway: Card / UPI / Wallet tabs
+  (cosmetic — card number/expiry auto-formatting, no real validation
+  beyond "looks filled in"), an **Approve payment** button that simulates
+  processing with a progress bar, and a "simulate a failed payment" link
+  for testing the failure path. Writes a `payments` record and updates the
+  booking's status either way.
+- `/payment/[id]/result` — animated success/failure screen reading the
+  live booking record, with "View my bookings" / "Try again" CTAs.
+- `/my-bookings` — protected page listing the signed-in user's bookings
+  with status-aware actions (Complete payment / Retry payment / View
+  receipt).
+
+**Other**
+- `firestore.rules` added at the project root — not deployed automatically
+  (you'll need to paste it into Firebase Console → Firestore → Rules, or
+  deploy via the Firebase CLI). It's written for the exact access pattern
+  this app uses: public read on site content/fleet, users only touching
+  their own bookings, and an `isAdmin()` check ready for the dashboard
+  phase.
+- New shadcn-style primitives: Checkbox, Progress, Avatar, DropdownMenu.
+
+## Everything from Phases 1–2 still applies
+See "Getting it running", "Design direction", "Theming, explained", and
+Cloudinary/Firebase setup notes below — unchanged.
 
 ## Getting it running
 
@@ -79,16 +98,21 @@ Two independent systems, so they can't fight each other:
 The admin Theme Manager (coming in the dashboard phase) will just write to
 that same Firestore doc — every connected browser updates live.
 
+## Before testing auth locally
+
+In the Firebase Console for `drive-away-77747`:
+1. **Authentication → Sign-in method** — enable **Email/Password** and
+   **Google**.
+2. **Authentication → Settings → Authorized domains** — `localhost` is
+   there by default; add your Vercel domain once deployed.
+3. **Firestore Database** — create the database if you haven't yet
+   (Production mode is fine), then paste `firestore.rules` into the Rules
+   tab so bookings/users are actually protected.
+
 ## Next phases
 
-1. **Auth** — email/password with Firebase email verification, Google
-   sign-in, protected "My Bookings"
-2. **Booking flow + dummy payment** — real checkout page, fake payment
-   gateway page, payment-approve/result page, Firestore booking record
-   (replaces the `/booking/[id]` placeholder)
-3. **Admin dashboard** (shadcn-heavy) — Content Manager, Theme Manager
+1. **Admin dashboard** (shadcn-heavy) — Content Manager, Theme Manager
    (live color/contrast/font/radius editor), Fleet Manager (Cloudinary
    upload), Bookings Manager, Users Manager, all behind Firebase Auth +
-   role check
-4. **Polish + deploy** — responsiveness pass, Vercel deploy, Firestore
-   Security Rules
+   the `isAdmin()` rule already written
+2. **Polish + deploy** — responsiveness pass, Vercel deploy

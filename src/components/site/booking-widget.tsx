@@ -9,10 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { computePricing, DEPOSIT } from "@/lib/pricing";
 import type { Vehicle } from "@/lib/default-content";
-
-const SERVICE_FEE_RATE = 0.05;
-const DEPOSIT = 2000;
 
 export function BookingWidget({ vehicle }: { vehicle: Vehicle }) {
   const router = useRouter();
@@ -23,9 +21,7 @@ export function BookingWidget({ vehicle }: { vehicle: Vehicle }) {
   const [end, setEnd] = React.useState(tomorrow);
 
   const days = Math.max(1, differenceInCalendarDays(new Date(end), new Date(start)));
-  const subtotal = days * vehicle.pricePerDay;
-  const serviceFee = Math.round(subtotal * SERVICE_FEE_RATE);
-  const total = subtotal + serviceFee;
+  const { subtotal, serviceFee, total } = computePricing(vehicle.pricePerDay, days);
 
   const handleReserve = () => {
     const params = new URLSearchParams({ start, end });
@@ -107,7 +103,7 @@ export function BookingWidget({ vehicle }: { vehicle: Vehicle }) {
 
         <div className="flex justify-between font-semibold">
           <span>Total due at checkout</span>
-          <span className="font-mono-num">₹{(total + DEPOSIT).toLocaleString("en-IN")}</span>
+          <span className="font-mono-num">₹{total.toLocaleString("en-IN")}</span>
         </div>
 
         <Button

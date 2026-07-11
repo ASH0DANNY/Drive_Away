@@ -3,6 +3,7 @@ import { Space_Grotesk, Sora, Manrope, Inter, JetBrains_Mono } from "next/font/g
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SiteConfigProvider } from "@/context/site-config-context";
+import { AuthProvider } from "@/context/auth-context";
 import { THEME_CACHE_KEY } from "@/lib/theme-utils";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -52,10 +53,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <SiteConfigProvider>
-            {children}
-            <Toaster />
-          </SiteConfigProvider>
+          <AuthProvider>
+            <SiteConfigProvider>
+              {children}
+              <Toaster />
+            </SiteConfigProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
