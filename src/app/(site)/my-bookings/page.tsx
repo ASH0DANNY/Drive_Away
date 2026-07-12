@@ -7,7 +7,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InvoiceActions } from "@/components/site/invoice-actions";
 import { useAuth } from "@/context/auth-context";
+import { useSiteConfig } from "@/context/site-config-context";
 import { useMyBookings } from "@/lib/hooks/use-my-bookings";
 import type { Booking } from "@/lib/bookings";
 import { cn } from "@/lib/utils";
@@ -22,9 +24,9 @@ function StatusBadge({ booking }: { booking: Booking }) {
   return <Badge variant="outline">Awaiting payment</Badge>;
 }
 
-function BookingRow({ booking }: { booking: Booking }) {
+function BookingRow({ booking, onlinePaymentsEnabled }: { booking: Booking; onlinePaymentsEnabled: boolean }) {
   const Icon = booking.vehicleType === "car" ? Car : Bike;
-  const needsAction = booking.paymentStatus !== "paid";
+  const isPaid = booking.paymentStatus === "paid";
 
   return (
     <Card>
@@ -52,20 +54,20 @@ function BookingRow({ booking }: { booking: Booking }) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-4 sm:flex-col sm:items-end sm:justify-center">
+        <div className="flex flex-col items-end gap-2">
           <span className="font-mono-num text-base font-semibold">
             ₹{booking.total.toLocaleString("en-IN")}
           </span>
-          {needsAction ? (
+          {isPaid ? (
+            <InvoiceActions booking={booking} />
+          ) : onlinePaymentsEnabled ? (
             <Button size="sm" asChild>
               <Link href={`/payment/${booking.id}`}>
                 {booking.paymentStatus === "failed" ? "Retry payment" : "Complete payment"}
               </Link>
             </Button>
           ) : (
-            <Button size="sm" variant="outline" asChild>
-              <Link href={`/payment/${booking.id}/result?status=success`}>View receipt</Link>
-            </Button>
+            <span className="text-xs text-muted-foreground">Pay at pickup</span>
           )}
         </div>
       </CardContent>
@@ -76,6 +78,7 @@ function BookingRow({ booking }: { booking: Booking }) {
 export default function MyBookingsPage() {
   const { user, loading: authLoading } = useAuth();
   const { bookings, loading } = useMyBookings();
+  const { config } = useSiteConfig();
 
   if (!authLoading && !user) {
     return (
@@ -106,7 +109,9 @@ export default function MyBookingsPage() {
             <Skeleton className="h-24 w-full rounded-xl" />
           </>
         ) : bookings.length > 0 ? (
-          bookings.map((b) => <BookingRow key={b.id} booking={b} />)
+          bookings.map((b) => (
+            <BookingRow key={b.id} booking={b} onlinePaymentsEnabled={config.settings.onlinePaymentsEnabled} />
+          ))
         ) : (
           <div className="flex flex-col items-center rounded-xl border border-dashed border-border py-16 text-center">
             <Ticket className="size-8 text-muted-foreground" strokeWidth={1.25} />

@@ -66,6 +66,12 @@ export type SiteConfig = {
     email: string;
     phone: string;
     address: string;
+    legalName: string;
+    taxId: string;
+    invoiceTerms: string;
+  };
+  settings: {
+    onlinePaymentsEnabled: boolean;
   };
 };
 
@@ -170,6 +176,13 @@ export const defaultSiteConfig: SiteConfig = {
     email: "support@driveaway.app",
     phone: "+91 98765 43210",
     address: "12 MG Road, Patna, Bihar, India",
+    legalName: "Drive Away Rentals Pvt. Ltd.",
+    taxId: "",
+    invoiceTerms:
+      "The refundable deposit is returned in full at vehicle return, minus any damage or shortfall assessed at handover. This is a computer-generated invoice and does not require a signature.",
+  },
+  settings: {
+    onlinePaymentsEnabled: true,
   },
 };
 

@@ -8,7 +8,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { format, differenceInCalendarDays } from "date-fns";
-import { Loader2, ShieldCheck, ArrowLeft, LogIn } from "lucide-react";
+import { Loader2, ShieldCheck, ArrowLeft, LogIn, Tag, X, BadgePercent } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,15 +17,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/context/auth-context";
+import { useSiteConfig } from "@/context/site-config-context";
 import { useVehicle } from "@/lib/hooks/use-vehicle";
 import { computePricing } from "@/lib/pricing";
-import { createBooking } from "@/lib/bookings";
+import { createBooking, isFirstBooking } from "@/lib/bookings";
+import { validateCoupon, redeemCoupon, type Coupon } from "@/lib/coupons";
 import { checkoutSchema, type CheckoutValues } from "@/lib/validation/checkout";
 
 export default function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = usePromise(params);
   const { vehicle, loading } = useVehicle(id);
   const { user, isVerified } = useAuth();
+  const { config } = useSiteConfig();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -34,6 +37,12 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
   const days = Math.max(1, differenceInCalendarDays(new Date(end), new Date(start)));
 
   const [submitting, setSubmitting] = React.useState(false);
+  const [couponInput, setCouponInput] = React.useState("");
+  const [couponChecking, setCouponChecking] = React.useState(false);
+  const [couponError, setCouponError] = React.useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = React.useState<{ coupon: Coupon; discountAmount: number } | null>(
+    null
+  );
 
   const {
     register,
@@ -44,6 +53,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
     resolver: zodResolver(checkoutSchema),
     defaultValues: { customerName: user?.displayName ?? "" },
   });
+
+  const onlinePaymentsEnabled = config.settings.onlinePaymentsEnabled;
 
   if (loading) {
     return (
@@ -64,7 +75,9 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
     );
   }
 
-  const { subtotal, serviceFee, deposit, total } = computePricing(vehicle.pricePerDay, days);
+  const { subtotal, serviceFee, deposit } = computePricing(vehicle.pricePerDay, days);
+  const discountAmount = appliedCoupon?.discountAmount ?? 0;
+  const total = subtotal - discountAmount + serviceFee + deposit;
   const redirectHere = `/booking/${id}?start=${start}&end=${end}`;
 
   if (!user) {
@@ -91,6 +104,26 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
     );
   }
 
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setCouponChecking(true);
+    setCouponError(null);
+    try {
+      const firstBooking = await isFirstBooking(user.uid);
+      const result = await validateCoupon(couponInput, { subtotal, isFirstBooking: firstBooking });
+      if (result.ok) {
+        setAppliedCoupon({ coupon: result.coupon, discountAmount: result.discountAmount });
+        toast.success(`"${result.coupon.code}" applied — ₹${result.discountAmount.toLocaleString("en-IN")} off.`);
+      } else {
+        setCouponError(result.message);
+      }
+    } catch {
+      setCouponError("Couldn't check that code — try again.");
+    } finally {
+      setCouponChecking(false);
+    }
+  };
+
   const onSubmit = async (values: CheckoutValues) => {
     setSubmitting(true);
     try {
@@ -107,12 +140,26 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
         subtotal,
         serviceFee,
         deposit,
+        discountType: appliedCoupon ? "coupon" : "none",
+        discountValue: appliedCoupon?.coupon.value ?? 0,
+        discountAmount,
+        couponCode: appliedCoupon?.coupon.code ?? null,
         total,
         customerName: values.customerName,
+        customerEmail: user.email ?? "",
         customerPhone: values.customerPhone,
         licenseNumber: values.licenseNumber,
       });
-      router.push(`/payment/${bookingId}`);
+
+      if (appliedCoupon) {
+        await redeemCoupon(appliedCoupon.coupon.id);
+      }
+
+      if (onlinePaymentsEnabled) {
+        router.push(`/payment/${bookingId}`);
+      } else {
+        router.push(`/payment/${bookingId}/result`);
+      }
     } catch {
       toast.error("Couldn't create the booking — please try again.");
       setSubmitting(false);
@@ -129,6 +176,13 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
       </Link>
 
       <h1 className="mt-4 font-display text-2xl font-semibold sm:text-3xl">Confirm your booking</h1>
+
+      {!onlinePaymentsEnabled && (
+        <div className="mt-4 flex items-center gap-2 rounded-lg bg-secondary/10 px-3.5 py-2.5 text-sm text-foreground">
+          <BadgePercent className="size-4 shrink-0 text-secondary" />
+          Online payment is currently off — you'll reserve now and pay in person at pickup.
+        </div>
+      )}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-[1.3fr_1fr]">
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -192,7 +246,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
 
               <Button type="submit" size="lg" className="w-full" disabled={submitting || !isVerified}>
                 {submitting && <Loader2 className="size-4 animate-spin" />}
-                Continue to payment
+                {onlinePaymentsEnabled ? "Continue to payment" : "Reserve — pay at pickup"}
               </Button>
             </CardContent>
           </Card>
@@ -215,11 +269,59 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
 
               <Separator className="my-4" />
 
+              {appliedCoupon ? (
+                <div className="mb-4 flex items-center justify-between rounded-lg bg-success/10 px-3 py-2 text-sm">
+                  <span className="flex items-center gap-1.5 text-success">
+                    <Tag className="size-3.5" /> {appliedCoupon.coupon.code}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAppliedCoupon(null);
+                      setCouponInput("");
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Remove coupon"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="mb-4">
+                  <div className="flex gap-2">
+                    <Input
+                      value={couponInput}
+                      onChange={(e) => {
+                        setCouponInput(e.target.value);
+                        setCouponError(null);
+                      }}
+                      placeholder="Promo code"
+                      className="uppercase"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleApplyCoupon}
+                      disabled={couponChecking || !couponInput.trim()}
+                    >
+                      {couponChecking ? <Loader2 className="size-4 animate-spin" /> : "Apply"}
+                    </Button>
+                  </div>
+                  {couponError && <p className="mt-1.5 text-xs text-destructive">{couponError}</p>}
+                </div>
+              )}
+
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between text-muted-foreground">
                   <span>₹{vehicle.pricePerDay.toLocaleString("en-IN")} × {days} {days === 1 ? "day" : "days"}</span>
                   <span className="font-mono-num">₹{subtotal.toLocaleString("en-IN")}</span>
                 </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-success">
+                    <span>Discount</span>
+                    <span className="font-mono-num">−₹{discountAmount.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-muted-foreground">
                   <span>Service fee</span>
                   <span className="font-mono-num">₹{serviceFee.toLocaleString("en-IN")}</span>
@@ -233,13 +335,15 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
               <Separator className="my-4" />
 
               <div className="flex justify-between font-semibold">
-                <span>Total</span>
+                <span>Total {onlinePaymentsEnabled ? "due at checkout" : "due at pickup"}</span>
                 <span className="font-mono-num">₹{total.toLocaleString("en-IN")}</span>
               </div>
 
               <p className="mt-4 flex items-center gap-1.5 text-xs text-muted-foreground">
                 <ShieldCheck className="size-3.5 shrink-0" />
-                Payment is simulated in this preview — no real charge is made.
+                {onlinePaymentsEnabled
+                  ? "Payment is simulated in this preview — no real charge is made."
+                  : "You'll pay the total amount in person when you pick up the vehicle."}
               </p>
             </CardContent>
           </Card>

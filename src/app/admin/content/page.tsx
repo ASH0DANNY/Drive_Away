@@ -291,6 +291,27 @@ export default function ContentManagerPage() {
                   <Input className="mt-1.5" {...register("footer.address")} />
                 </div>
               </div>
+
+              <div className="border-t border-border pt-5">
+                <p className="text-sm font-medium">Invoice & legal details</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  These also print on every customer invoice generated from a booking.
+                </p>
+                <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <Label>Legal / registered business name</Label>
+                    <Input className="mt-1.5" {...register("footer.legalName")} />
+                  </div>
+                  <div>
+                    <Label>Tax ID / GSTIN (optional)</Label>
+                    <Input className="mt-1.5" {...register("footer.taxId")} />
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <Label>Invoice terms & notes</Label>
+                  <Textarea className="mt-1.5" rows={3} {...register("footer.invoiceTerms")} />
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

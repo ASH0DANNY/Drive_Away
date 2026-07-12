@@ -53,7 +53,10 @@ service cloud.firestore {
     match /bookings/{bookingId} {
       allow read: if isAdmin() ||
                      (isSignedIn() && resource.data.userId == request.auth.uid);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      // regular customers can only create a booking for themselves; admins
+      // can also create one on behalf of a walk-in (see WALKIN_USER_ID)
+      allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid) ||
+                       isAdmin();
       allow update: if isAdmin() ||
                        (isSignedIn() && resource.data.userId == request.auth.uid);
     }
@@ -62,6 +65,17 @@ service cloud.firestore {
       allow read: if isAdmin() || isSignedIn();
       allow create: if isSignedIn();
       allow update: if isAdmin();
+    }
+
+    match /coupons/{couponId} {
+      // anyone signed in can look up a coupon by code to validate it at
+      // checkout, and bump its usedCount when redeeming; only admins manage them
+      allow read: if true;
+      allow create: if isAdmin();
+      allow delete: if isAdmin();
+      allow update: if isAdmin() ||
+                       (isSignedIn() &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(["usedCount"]));
     }
   }
 }

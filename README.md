@@ -1,9 +1,73 @@
-# Drive Away — Phase 1–4: Full Build (Public site, Auth, Booking/Payment, Admin Dashboard)
+# Drive Away — Full Build: Public site, Auth, Booking/Payment, Admin Dashboard, Coupons, Offline Billing & Invoices
 
-All four planned phases are done. What's left is polish and deploy (see
-bottom of this file).
+Everything is built. What's left is polish and deploy (see bottom of this
+file).
 
-## What's new in Phase 4 — Admin Dashboard
+## What's new in Phase 5 — Coupons, offline billing, invoices, payment toggle
+
+**Coupons** (`/admin/coupons`) — create percentage or fixed-amount codes,
+restrict to new customers only, set a minimum rental amount, cap total
+uses, set an expiry date, and toggle active/inactive without deleting.
+Customers apply a code at checkout (`/booking/[id]`) — it's validated live
+against all those rules (including a first-booking check for
+new-customer-only codes) and the discount is reflected in the price
+summary before they reserve. Redemption increments the coupon's use count
+at booking time.
+  - *Known trade-off:* validation and the use-count increment happen as
+    two separate client-side calls rather than inside a server
+    transaction, so a maxUses-limited code could theoretically be
+    slightly over-redeemed under simultaneous use by many customers at
+    once. Fine for a small rental fleet; a Cloud Function would close
+    this gap if you ever need it airtight.
+
+**Multiple vehicle photos** — already covered by the Fleet Manager's photo
+uploader from the previous phase (`src/components/admin/image-uploader.tsx`):
+add as many angles as you want per vehicle, remove any of them, and pick
+which one is the cover photo. Nothing new needed here.
+
+**Online payments toggle + offline billing** (`/admin/settings` and
+`/admin/billing`) — a single switch in Settings turns the dummy payment
+gateway off site-wide; checkout then simply reserves the vehicle with
+"pay at pickup" messaging instead of routing through `/payment/[id]`.
+Two ways to collect payment in person:
+  - **Existing online booking, paying at pickup:** in `/admin/bookings`,
+    hit "Mark paid" on any unpaid booking — a dialog lets you apply a
+    percentage or fixed-rupee discount on the spot before confirming.
+  - **True walk-in (never booked online):** `/admin/billing` is a small
+    POS-style form — pick the vehicle, dates, customer details, an
+    optional discount, and "Record booking & mark paid" creates an
+    already-confirmed, already-paid booking and immediately offers the
+    invoice for that customer.
+
+**Invoice generation** (`src/lib/invoice-pdf.ts`, jsPDF + jspdf-autotable)
+— every paid booking (online or offline) gets a generated invoice: business
+details, customer + rental details, payment method/transaction id, an
+itemized rate/discount/total table, the same refundable-deposit and
+service-fee breakdown shown at checkout, and your configured terms &
+conditions. "View invoice" opens it in a new tab; "Download" saves the
+PDF. These buttons appear on the payment success page, on each paid row
+in My Bookings, and next to every paid booking in the admin Bookings
+Manager and Offline Billing confirmation.
+
+**Business/invoice details feeding both the site and the PDF** — Content
+Manager's Footer tab (`/admin/content`) now also has a legal business
+name, an optional Tax ID/GSTIN, and invoice terms & notes, alongside the
+existing address/email/phone. These are the exact fields printed on every
+invoice, so there's one place to keep them accurate.
+
+## Before testing this locally
+Same Firebase Console setup as before, plus:
+- Paste the **updated** `firestore.rules` (coupons collection + admin
+  walk-in booking support) if you deployed the earlier version.
+- Nothing new needed for Cloudinary/jsPDF — jsPDF runs entirely in the
+  browser, no extra service or credentials required.
+
+## Everything from earlier phases still applies
+See "Getting it running", "Design direction", "Theming, explained", and
+Cloudinary/Firebase setup notes below — unchanged.
+
+## Getting it running
+
 
 Everything lives at `/admin`, guarded by `AdminGuard`
 (`src/components/admin/admin-guard.tsx`): signed-out → prompted to sign

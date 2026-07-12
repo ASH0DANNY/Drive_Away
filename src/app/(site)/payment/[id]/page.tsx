@@ -44,7 +44,7 @@ export default function PaymentGatewayPage({ params }: { params: Promise<{ id: s
 
   React.useEffect(() => {
     if (booking?.paymentStatus === "paid") {
-      router.replace(`/payment/${id}/result?status=success`);
+      router.replace(`/payment/${id}/result`);
     }
   }, [booking, id, router]);
 
@@ -89,7 +89,7 @@ export default function PaymentGatewayPage({ params }: { params: Promise<{ id: s
       await recordPaymentResult(booking.id, method, booking.total, outcome);
     } finally {
       setTimeout(() => {
-        router.push(`/payment/${id}/result?status=${outcome}`);
+        router.push(`/payment/${id}/result`);
       }, 250);
     }
   };

@@ -1,23 +1,20 @@
 "use client";
 
-import * as React from "react";
 import { use as usePromise } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
-import { CheckCircle2, XCircle, Ticket, RotateCcw } from "lucide-react";
+import { CheckCircle2, XCircle, Clock, Ticket, RotateCcw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InvoiceActions } from "@/components/site/invoice-actions";
 import { useBooking } from "@/lib/hooks/use-booking";
 
 export default function PaymentResultPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = usePromise(params);
   const { booking, loading } = useBooking(id);
-  const searchParams = useSearchParams();
-  const status = searchParams.get("status") === "success" ? "success" : "failed";
 
   if (loading) {
     return (
@@ -38,7 +35,39 @@ export default function PaymentResultPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const isSuccess = status === "success";
+  // Derived from the live booking record rather than a URL param, so this
+  // page is correct whether it's reached from a successful/failed online
+  // payment, or straight from checkout when online payments are off.
+  const state: "paid" | "failed" | "awaiting-offline" =
+    booking.paymentStatus === "paid" ? "paid" : booking.paymentStatus === "failed" ? "failed" : "awaiting-offline";
+
+  const visual = {
+    paid: { icon: CheckCircle2, tone: "success" as const },
+    failed: { icon: XCircle, tone: "destructive" as const },
+    "awaiting-offline": { icon: Clock, tone: "secondary" as const },
+  }[state];
+
+  const Icon = visual.icon;
+  const toneClass =
+    visual.tone === "success"
+      ? "bg-success/10 text-success"
+      : visual.tone === "destructive"
+      ? "bg-destructive/10 text-destructive"
+      : "bg-secondary/10 text-secondary";
+
+  const heading =
+    state === "paid"
+      ? "Booking confirmed"
+      : state === "failed"
+      ? "Payment didn't go through"
+      : "Reservation confirmed — pay at pickup";
+
+  const subtext =
+    state === "paid"
+      ? `${booking.vehicleName} is reserved for your dates. A confirmation is on your account.`
+      : state === "failed"
+      ? "No charge was made. You can try again with the same or a different payment method."
+      : `${booking.vehicleName} is held for your dates. Bring your license and pay ₹${booking.total.toLocaleString("en-IN")} in person at pickup.`;
 
   return (
     <div className="mx-auto max-w-md px-5 py-14 lg:py-20">
@@ -48,23 +77,13 @@ export default function PaymentResultPage({ params }: { params: Promise<{ id: st
             initial={{ scale: 0.5, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 260, damping: 18 }}
-            className={
-              isSuccess
-                ? "flex size-16 items-center justify-center rounded-full bg-success/10 text-success"
-                : "flex size-16 items-center justify-center rounded-full bg-destructive/10 text-destructive"
-            }
+            className={`flex size-16 items-center justify-center rounded-full ${toneClass}`}
           >
-            {isSuccess ? <CheckCircle2 className="size-9" /> : <XCircle className="size-9" />}
+            <Icon className="size-9" />
           </motion.div>
 
-          <h1 className="mt-5 font-display text-xl font-semibold">
-            {isSuccess ? "Booking confirmed" : "Payment didn't go through"}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {isSuccess
-              ? `${booking.vehicleName} is reserved for your dates. A confirmation is on your account.`
-              : "No charge was made. You can try again with the same or a different payment method."}
-          </p>
+          <h1 className="mt-5 font-display text-xl font-semibold">{heading}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{subtext}</p>
 
           <div className="mt-6 w-full rounded-lg border border-border bg-muted/40 p-4 text-left text-sm">
             <div className="flex justify-between">
@@ -84,8 +103,14 @@ export default function PaymentResultPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
+          {state === "paid" && (
+            <div className="mt-4 w-full">
+              <InvoiceActions booking={booking} />
+            </div>
+          )}
+
           <div className="mt-6 flex w-full flex-col gap-2">
-            {isSuccess ? (
+            {state === "paid" && (
               <>
                 <Button asChild size="lg">
                   <Link href="/my-bookings">
@@ -96,7 +121,8 @@ export default function PaymentResultPage({ params }: { params: Promise<{ id: st
                   <Link href="/fleet">Book another vehicle</Link>
                 </Button>
               </>
-            ) : (
+            )}
+            {state === "failed" && (
               <>
                 <Button asChild size="lg">
                   <Link href={`/payment/${booking.id}`}>
@@ -107,6 +133,13 @@ export default function PaymentResultPage({ params }: { params: Promise<{ id: st
                   <Link href={`/fleet/${booking.vehicleId}`}>Back to vehicle</Link>
                 </Button>
               </>
+            )}
+            {state === "awaiting-offline" && (
+              <Button asChild size="lg">
+                <Link href="/my-bookings">
+                  <Ticket className="size-4" /> View my bookings
+                </Link>
+              </Button>
             )}
           </div>
         </CardContent>

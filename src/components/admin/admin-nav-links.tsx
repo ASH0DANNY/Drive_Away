@@ -9,6 +9,9 @@ import {
   CarFront,
   Ticket,
   Users,
+  BadgePercent,
+  Receipt,
+  Settings,
   ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,8 +21,11 @@ const NAV = [
   { href: "/admin/content", label: "Content", icon: FileText },
   { href: "/admin/theme", label: "Theme", icon: Palette },
   { href: "/admin/fleet", label: "Fleet", icon: CarFront },
+  { href: "/admin/coupons", label: "Coupons", icon: BadgePercent },
+  { href: "/admin/billing", label: "Offline billing", icon: Receipt },
   { href: "/admin/bookings", label: "Bookings", icon: Ticket },
   { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export function AdminNavLinks({ onNavigate }: { onNavigate?: () => void }) {
