@@ -22,6 +22,15 @@ function formatDate(value: string | Date): string {
     .replace(/\//g, "-");
 }
 
+// jsPDF's built-in fonts (Helvetica/Times/Courier) don't include a glyph
+// for ₹ (U+20B9) — without embedding a custom Unicode font, it renders as
+// a broken fallback character that visually collides with the digit next
+// to it. "Rs." is the standard ASCII-safe substitute for PDF output; the
+// live site UI still shows ₹ normally, since browsers render it fine.
+function fmtMoney(amount: number): string {
+  return `Rs. ${amount.toLocaleString("en-IN")}`;
+}
+
 export function generateBookingInvoicePdf(booking: Booking, business: BusinessDetails): jsPDF {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" }) as JsPDFWithAutoTable;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -159,11 +168,11 @@ export function generateBookingInvoicePdf(booking: Booking, business: BusinessDe
     [
       1,
       `${booking.vehicleName} rental (${booking.vehicleType === "car" ? "Car" : "Bike"})`,
-      `₹${booking.pricePerDay.toLocaleString("en-IN")}`,
+      fmtMoney(booking.pricePerDay),
       booking.days,
-      `₹${gross.toLocaleString("en-IN")}`,
-      `₹${booking.discountAmount.toLocaleString("en-IN")}`,
-      `₹${netRental.toLocaleString("en-IN")}`,
+      fmtMoney(gross),
+      fmtMoney(booking.discountAmount),
+      fmtMoney(netRental),
     ],
   ];
 
@@ -171,18 +180,19 @@ export function generateBookingInvoicePdf(booking: Booking, business: BusinessDe
     head: [["SN.", "Description", "Rate/day", "Days", "Gross", "Discount", "Net"]],
     body: rows,
     startY: tableStartY,
-    styles: { fontSize: 9, cellPadding: 3, lineColor: [0, 0, 0], lineWidth: 0.1 },
+    styles: { fontSize: 9, cellPadding: 3, lineColor: [0, 0, 0], lineWidth: 0.1, overflow: "linebreak" },
     headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], fontStyle: "bold", halign: "center" },
     columnStyles: {
-      0: { halign: "center", cellWidth: 15 },
-      1: { cellWidth: 140 },
-      2: { cellWidth: 30, halign: "right" },
-      3: { cellWidth: 20, halign: "center" },
-      4: { cellWidth: 30, halign: "right" },
-      5: { cellWidth: 30, halign: "right" },
-      6: { cellWidth: 30, halign: "right" },
+      0: { halign: "center", cellWidth: 12 },
+      1: { cellWidth: 121 },
+      2: { cellWidth: 26, halign: "right" },
+      3: { cellWidth: 16, halign: "center" },
+      4: { cellWidth: 32, halign: "right" },
+      5: { cellWidth: 32, halign: "right" },
+      6: { cellWidth: 38, halign: "right" },
     },
     margin: { left: margin, right: margin },
+    tableWidth: 277,
     theme: "grid",
   });
 
@@ -198,12 +208,12 @@ export function generateBookingInvoicePdf(booking: Booking, business: BusinessDe
     afterTableY += bold ? 7 : 5;
   };
 
-  totalLine("Net rental", `₹${netRental.toLocaleString("en-IN")}`);
-  totalLine("Service fee", `₹${booking.serviceFee.toLocaleString("en-IN")}`);
-  totalLine("Refundable deposit", `₹${booking.deposit.toLocaleString("en-IN")}`);
+  totalLine("Net rental", fmtMoney(netRental));
+  totalLine("Service fee", fmtMoney(booking.serviceFee));
+  totalLine("Refundable deposit", fmtMoney(booking.deposit));
   doc.setLineWidth(0.2);
   doc.line(totalsX, afterTableY - 3, pageWidth - margin, afterTableY - 3);
-  totalLine("Total paid", `₹${booking.total.toLocaleString("en-IN")}`, true);
+  totalLine("Total paid", fmtMoney(booking.total), true);
 
   // ============ TERMS & CONDITIONS ============
   let termsY = afterTableY + 8;
