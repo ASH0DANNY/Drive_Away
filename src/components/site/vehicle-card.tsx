@@ -1,26 +1,20 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { Car, Bike, Star, Gauge, Users, Fuel } from "lucide-react";
+import { Car, Bike, Star, Gauge, Users, Fuel, ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import type { Vehicle } from "@/lib/default-content";
 import { cn } from "@/lib/utils";
 
 export function VehicleCard({ vehicle, index = 0 }: { vehicle: Vehicle; index?: number }) {
   const hasImage = vehicle.images.length > 0;
 
-  return (
-    <motion.article
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-60px" }}
-      transition={{ duration: 0.5, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{ y: -6 }}
-      className="group overflow-hidden rounded-xl border border-border bg-card"
-    >
+  const cardInner = (
+    <>
       <div className="relative aspect-[4/3] overflow-hidden bg-muted">
         {hasImage ? (
           <Image
@@ -85,11 +79,32 @@ export function VehicleCard({ vehicle, index = 0 }: { vehicle: Vehicle; index?: 
             <span className="font-mono-num text-lg font-semibold">₹{vehicle.pricePerDay.toLocaleString("en-IN")}</span>
             <span className="text-xs text-muted-foreground">/day</span>
           </div>
-          <Button size="sm" variant="outline" disabled={!vehicle.available}>
-            {vehicle.available ? "View details" : "Unavailable"}
-          </Button>
+          {vehicle.available ? (
+            <span className={cn(buttonVariants({ size: "sm", variant: "outline" }), "pointer-events-none")}>
+              View details <ArrowRight className="size-3.5" />
+            </span>
+          ) : (
+            <span className={cn(buttonVariants({ size: "sm", variant: "outline" }), "pointer-events-none opacity-50")}>
+              Unavailable
+            </span>
+          )}
         </div>
       </div>
+    </>
+  );
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ duration: 0.5, delay: index * 0.06, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -6 }}
+      className="group overflow-hidden rounded-xl border border-border bg-card"
+    >
+      <Link href={`/fleet/${vehicle.id}`} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl">
+        {cardInner}
+      </Link>
     </motion.article>
   );
 }

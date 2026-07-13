@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
-import { Menu, ArrowUpRight, LogOut, Ticket } from "lucide-react";
+import { Menu, ArrowUpRight, LogOut, Ticket, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ModeToggle } from "@/components/site/mode-toggle";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetClose } from "@/components/ui/sheet";
@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const { config } = useSiteConfig();
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = React.useState(false);
 
@@ -83,6 +83,13 @@ export function Navbar() {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel className="truncate">{user.email}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
+                {role === "admin" && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin">
+                      <LayoutDashboard className="size-4" /> Admin dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem asChild>
                   <Link href="/my-bookings">
                     <Ticket className="size-4" /> My bookings
@@ -132,6 +139,15 @@ export function Navbar() {
               <div className="mt-6 flex flex-col gap-2">
                 {user ? (
                   <>
+                    {role === "admin" && (
+                      <SheetClose asChild>
+                        <Button variant="outline" asChild>
+                          <Link href="/admin">
+                            <LayoutDashboard className="size-4" /> Admin dashboard
+                          </Link>
+                        </Button>
+                      </SheetClose>
+                    )}
                     <SheetClose asChild>
                       <Button variant="outline" asChild>
                         <Link href="/my-bookings">

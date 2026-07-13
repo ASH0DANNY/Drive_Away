@@ -1,4 +1,5 @@
 import type { ThemeConfig } from "./default-content";
+import { defaultTheme } from "./default-content";
 
 const FONT_STACKS: Record<ThemeConfig["fontDisplay"], string> = {
   "space-grotesk": "var(--font-space-grotesk), sans-serif",
@@ -25,23 +26,24 @@ export function readableForeground(hex: string): string {
 }
 
 /** Applies theme tokens as CSS custom properties on <html>. Runs on the client only. */
-export function applyThemeVars(theme: ThemeConfig) {
+export function applyThemeVars(theme: Partial<ThemeConfig> | null | undefined) {
   if (typeof document === "undefined") return;
+  const merged: ThemeConfig = { ...defaultTheme, ...(theme ?? {}) };
   const root = document.documentElement;
-  root.style.setProperty("--da-primary", theme.primary);
+  root.style.setProperty("--da-primary", merged.primary);
   root.style.setProperty(
     "--da-primary-foreground",
-    theme.primaryForeground || readableForeground(theme.primary)
+    merged.primaryForeground || readableForeground(merged.primary)
   );
-  root.style.setProperty("--da-secondary", theme.secondary);
+  root.style.setProperty("--da-secondary", merged.secondary);
   root.style.setProperty(
     "--da-secondary-foreground",
-    theme.secondaryForeground || readableForeground(theme.secondary)
+    merged.secondaryForeground || readableForeground(merged.secondary)
   );
-  root.style.setProperty("--da-radius", `${theme.radius}rem`);
-  root.style.setProperty("--da-font-display", FONT_STACKS[theme.fontDisplay]);
-  root.style.setProperty("--da-font-body", BODY_FONT_STACKS[theme.fontBody]);
-  root.setAttribute("data-contrast", theme.contrast === "high" ? "high" : "default");
+  root.style.setProperty("--da-radius", `${merged.radius}rem`);
+  root.style.setProperty("--da-font-display", FONT_STACKS[merged.fontDisplay]);
+  root.style.setProperty("--da-font-body", BODY_FONT_STACKS[merged.fontBody]);
+  root.setAttribute("data-contrast", merged.contrast === "high" ? "high" : "default");
 }
 
 export const THEME_CACHE_KEY = "da-site-config-cache";

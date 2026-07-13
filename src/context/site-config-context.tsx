@@ -5,6 +5,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { defaultSiteConfig, type SiteConfig } from "@/lib/default-content";
 import { applyThemeVars, THEME_CACHE_KEY } from "@/lib/theme-utils";
+import { mergeWithDefaults } from "@/lib/merge-config";
 
 type SiteConfigContextValue = {
   config: SiteConfig;
@@ -27,7 +28,7 @@ export function SiteConfigProvider({ children }: { children: React.ReactNode }) 
     try {
       const cached = localStorage.getItem(THEME_CACHE_KEY);
       if (cached) {
-        const parsed = JSON.parse(cached) as SiteConfig;
+        const parsed = mergeWithDefaults(defaultSiteConfig, JSON.parse(cached));
         setConfig(parsed);
         applyThemeVars(parsed.theme);
       }
@@ -43,7 +44,7 @@ export function SiteConfigProvider({ children }: { children: React.ReactNode }) 
       ref,
       (snap) => {
         if (snap.exists()) {
-          const data = snap.data() as SiteConfig;
+          const data = mergeWithDefaults(defaultSiteConfig, snap.data());
           setConfig(data);
           applyThemeVars(data.theme);
           setIsLive(true);

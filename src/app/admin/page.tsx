@@ -3,23 +3,25 @@
 import * as React from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { CarFront, Ticket, IndianRupee, Clock, ArrowUpRight } from "lucide-react";
+import { CarFront, Ticket, IndianRupee, Clock, ArrowUpRight, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useVehicles } from "@/lib/hooks/use-vehicles";
-import { useAllBookings } from "@/lib/hooks/use-all-bookings";
+import { useOverviewStats } from "@/lib/hooks/use-overview-stats";
+import { usePaginatedQuery } from "@/lib/hooks/use-paginated-query";
+import type { Booking } from "@/lib/bookings";
 
 function StatCard({
   icon: Icon,
   label,
   value,
-  hint,
+  loading,
 }: {
   icon: React.ElementType;
   label: string;
   value: string;
-  hint?: string;
+  loading: boolean;
 }) {
   return (
     <Card>
@@ -28,37 +30,57 @@ function StatCard({
           <Icon className="size-4" />
           <span className="text-xs font-medium">{label}</span>
         </div>
-        <p className="mt-2 font-mono-num text-2xl font-semibold">{value}</p>
-        {hint && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+        {loading ? (
+          <Skeleton className="mt-2 h-8 w-20" />
+        ) : (
+          <p className="mt-2 font-mono-num text-2xl font-semibold">{value}</p>
+        )}
       </CardContent>
     </Card>
   );
 }
 
 export default function AdminOverviewPage() {
-  const { vehicles } = useVehicles();
-  const { bookings, loading } = useAllBookings();
+  const { stats, loading: statsLoading, refresh: refreshStats } = useOverviewStats();
 
-  const revenue = bookings
-    .filter((b) => b.paymentStatus === "paid")
-    .reduce((sum, b) => sum + b.total, 0);
-  const confirmed = bookings.filter((b) => b.status === "confirmed").length;
-  const pending = bookings.filter((b) => b.paymentStatus === "pending").length;
+  // Bounded to the 6 most recent bookings — this page's cost stays flat
+  // no matter how many bookings exist in total. Full history lives in
+  // the Bookings tab, which paginates instead of loading everything.
+  const {
+    items: recentBookings,
+    loading: recentLoading,
+    refresh: refreshRecent,
+  } = usePaginatedQuery<Booking>("bookings", [], "createdAt", { pageSize: 6 });
+
+  const handleRefresh = () => {
+    refreshStats();
+    refreshRecent();
+  };
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-semibold">Overview</h1>
-      <p className="mt-1 text-sm text-muted-foreground">Live snapshot of the fleet and bookings.</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-semibold">Overview</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Snapshot of the fleet and bookings — refresh for the latest.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={handleRefresh}>
+          <RefreshCw className="size-3.5" /> Refresh
+        </Button>
+      </div>
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard icon={CarFront} label="Vehicles listed" value={String(vehicles.length)} />
-        <StatCard icon={Ticket} label="Confirmed bookings" value={String(confirmed)} />
+        <StatCard icon={CarFront} label="Vehicles listed" value={String(stats?.vehicleCount ?? 0)} loading={statsLoading} />
+        <StatCard icon={Ticket} label="Confirmed bookings" value={String(stats?.confirmedBookings ?? 0)} loading={statsLoading} />
         <StatCard
           icon={IndianRupee}
           label="Revenue (paid)"
-          value={`₹${revenue.toLocaleString("en-IN")}`}
+          value={`₹${(stats?.revenue ?? 0).toLocaleString("en-IN")}`}
+          loading={statsLoading}
         />
-        <StatCard icon={Clock} label="Awaiting payment" value={String(pending)} />
+        <StatCard icon={Clock} label="Awaiting payment" value={String(stats?.pendingPayments ?? 0)} loading={statsLoading} />
       </div>
 
       <div className="mt-8">
@@ -71,16 +93,16 @@ export default function AdminOverviewPage() {
 
         <Card className="mt-3">
           <CardContent className="divide-y divide-border p-0">
-            {loading ? (
+            {recentLoading ? (
               <div className="space-y-3 p-5">
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
                 <Skeleton className="h-10 w-full" />
               </div>
-            ) : bookings.length === 0 ? (
+            ) : recentBookings.length === 0 ? (
               <p className="p-5 text-sm text-muted-foreground">No bookings yet.</p>
             ) : (
-              bookings.slice(0, 6).map((b) => (
+              recentBookings.map((b) => (
                 <div key={b.id} className="flex items-center justify-between gap-4 p-4">
                   <div>
                     <p className="text-sm font-medium">{b.vehicleName}</p>

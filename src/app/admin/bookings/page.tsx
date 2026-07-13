@@ -3,7 +3,8 @@
 import * as React from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
-import { Loader2, Tag } from "lucide-react";
+import { where } from "firebase/firestore";
+import { Loader2, Tag, RefreshCw } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -27,7 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { InvoiceActions } from "@/components/site/invoice-actions";
-import { useAllBookings } from "@/lib/hooks/use-all-bookings";
+import { usePaginatedQuery } from "@/lib/hooks/use-paginated-query";
 import { updateBookingFields } from "@/lib/bookings-admin";
 import { markBookingPaidOffline } from "@/lib/bookings";
 import type { Booking, BookingStatus, PaymentStatus, DiscountType } from "@/lib/bookings";
@@ -42,10 +43,12 @@ function MarkPaidDialog({
   booking,
   open,
   onOpenChange,
+  onChanged,
 }: {
   booking: Booking;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onChanged: () => void;
 }) {
   const [discountType, setDiscountType] = React.useState<Exclude<DiscountType, "coupon">>("none");
   const [discountValue, setDiscountValue] = React.useState(0);
@@ -65,6 +68,7 @@ function MarkPaidDialog({
       await markBookingPaidOffline(booking, { type: discountType, value: discountValue });
       toast.success("Marked as paid.");
       onOpenChange(false);
+      onChanged();
     } catch {
       toast.error("Couldn't update — try again.");
     } finally {
@@ -134,13 +138,14 @@ function MarkPaidDialog({
   );
 }
 
-function BookingActions({ booking }: { booking: Booking }) {
+function BookingActions({ booking, onChanged }: { booking: Booking; onChanged: () => void }) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
 
   const handleStatus = async (value: BookingStatus) => {
     try {
       await updateBookingFields(booking.id, { status: value });
       toast.success("Booking status updated.");
+      onChanged();
     } catch {
       toast.error("Couldn't update — try again.");
     }
@@ -150,6 +155,7 @@ function BookingActions({ booking }: { booking: Booking }) {
     try {
       await updateBookingFields(booking.id, { paymentStatus: value });
       toast.success("Payment status updated.");
+      onChanged();
     } catch {
       toast.error("Couldn't update — try again.");
     }
@@ -185,35 +191,54 @@ function BookingActions({ booking }: { booking: Booking }) {
       )}
       {booking.paymentStatus === "paid" && <InvoiceActions booking={booking} />}
 
-      <MarkPaidDialog booking={booking} open={dialogOpen} onOpenChange={setDialogOpen} />
+      <MarkPaidDialog booking={booking} open={dialogOpen} onOpenChange={setDialogOpen} onChanged={onChanged} />
     </div>
   );
 }
 
 export default function BookingsManagerPage() {
-  const { bookings, loading } = useAllBookings();
   const [filter, setFilter] = React.useState<"all" | BookingStatus>("all");
 
-  const filtered = filter === "all" ? bookings : bookings.filter((b) => b.status === filter);
+  const {
+    items: bookings,
+    loading,
+    loadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+  } = usePaginatedQuery<Booking>(
+    "bookings",
+    filter === "all" ? [] : [where("status", "==", filter)],
+    "createdAt",
+    { pageSize: 20, resetKey: filter }
+  );
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold">Bookings</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{bookings.length} total bookings.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Showing the most recent {bookings.length}
+            {hasMore ? "+" : ""} — load more below, or filter by status.
+          </p>
         </div>
-        <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
-          <SelectTrigger className="w-44">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="confirmed">Confirmed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-2">
+          <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+            <SelectTrigger className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="icon" onClick={refresh} aria-label="Refresh">
+            <RefreshCw className="size-4" />
+          </Button>
+        </div>
       </div>
 
       <Card className="mt-6">
@@ -223,7 +248,7 @@ export default function BookingsManagerPage() {
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
             </div>
-          ) : filtered.length === 0 ? (
+          ) : bookings.length === 0 ? (
             <p className="p-5 text-sm text-muted-foreground">No bookings match this filter.</p>
           ) : (
             <Table>
@@ -238,7 +263,7 @@ export default function BookingsManagerPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((b) => (
+                {bookings.map((b) => (
                   <TableRow key={b.id}>
                     <TableCell>
                       <p className="font-medium">{b.customerName}</p>
@@ -258,7 +283,7 @@ export default function BookingsManagerPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <BookingActions booking={b} />
+                      <BookingActions booking={b} onChanged={refresh} />
                     </TableCell>
                   </TableRow>
                 ))}
@@ -267,6 +292,15 @@ export default function BookingsManagerPage() {
           )}
         </CardContent>
       </Card>
+
+      {hasMore && !loading && (
+        <div className="mt-4 flex justify-center">
+          <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+            {loadingMore && <Loader2 className="size-4 animate-spin" />}
+            Load more
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
