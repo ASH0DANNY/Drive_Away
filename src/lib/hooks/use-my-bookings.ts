@@ -33,7 +33,13 @@ export function useMyBookings() {
         setBookings(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Booking));
         setLoading(false);
       },
-      () => setLoading(false)
+      (err) => {
+        // Most likely cause if this fires: the composite index for
+        // (userId ==, createdAt desc) doesn't exist yet in Firestore.
+        // The error Firebase throws includes a direct "create it now" link.
+        console.error("Failed to load bookings (check for a missing Firestore index):", err);
+        setLoading(false);
+      }
     );
     return () => unsub();
   }, [user]);

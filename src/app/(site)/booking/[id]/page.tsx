@@ -160,7 +160,8 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
       } else {
         router.push(`/payment/${bookingId}/result`);
       }
-    } catch {
+    } catch (err) {
+      console.error("Failed to create booking:", err);
       toast.error("Couldn't create the booking — please try again.");
       setSubmitting(false);
     }

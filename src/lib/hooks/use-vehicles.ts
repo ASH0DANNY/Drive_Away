@@ -34,8 +34,8 @@ export function useVehicles(max?: number) {
         // vehicles added yet in admin), keep showing the sample fleet
         // rather than an empty grid.
       },
-      () => {
-        // offline / rules issue — bundled sample fleet stays visible.
+      (err) => {
+        console.error("Failed to load vehicles — showing sample fleet instead:", err);
       }
     );
     return () => unsub();

@@ -5,6 +5,7 @@ import { use as usePromise } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import { CreditCard, Smartphone, Wallet, Lock, Loader2, ArrowLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,7 @@ export default function PaymentGatewayPage({ params }: { params: Promise<{ id: s
       : true;
 
   const runPayment = async (outcome: "success" | "failed") => {
+    if (!booking) return;
     setProcessing(true);
     setProgress(0);
     const interval = setInterval(() => {
@@ -87,10 +89,14 @@ export default function PaymentGatewayPage({ params }: { params: Promise<{ id: s
 
     try {
       await recordPaymentResult(booking.id, method, booking.total, outcome);
-    } finally {
       setTimeout(() => {
         router.push(`/payment/${id}/result`);
       }, 250);
+    } catch (err) {
+      console.error("Failed to record payment result:", err);
+      toast.error("Couldn't reach the server to record this payment. Check your connection and try again.");
+      setProcessing(false);
+      setProgress(0);
     }
   };
 

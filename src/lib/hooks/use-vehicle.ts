@@ -24,7 +24,8 @@ export function useVehicle(id: string) {
         }
         setLoading(false);
       },
-      () => {
+      (err) => {
+        console.error("Failed to load vehicle:", err);
         setLoading(false);
       }
     );

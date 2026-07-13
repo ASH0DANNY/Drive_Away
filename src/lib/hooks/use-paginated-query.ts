@@ -64,7 +64,8 @@ export function usePaginatedQuery<T>(
         setHasMore(docs.length === pageSize);
         const mapped = docs.map((d) => ({ id: d.id, ...d.data() }) as T);
         setItems((prev) => (mode === "reset" ? mapped : [...prev, ...mapped]));
-      } catch {
+      } catch (err) {
+        console.error(`Failed to query ${collectionName} (check for a missing Firestore index):`, err);
         setError(true);
       } finally {
         setLoading(false);

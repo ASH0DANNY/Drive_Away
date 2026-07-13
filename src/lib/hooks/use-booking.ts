@@ -20,7 +20,10 @@ export function useBooking(id: string | undefined) {
         setBooking(snap.exists() ? ({ id: snap.id, ...snap.data() } as Booking) : null);
         setLoading(false);
       },
-      () => setLoading(false)
+      (err) => {
+        console.error("Failed to load booking:", err);
+        setLoading(false);
+      }
     );
     return () => unsub();
   }, [id]);

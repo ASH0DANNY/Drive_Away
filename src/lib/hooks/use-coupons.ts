@@ -17,7 +17,10 @@ export function useCoupons() {
         setCoupons(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Coupon));
         setLoading(false);
       },
-      () => setLoading(false)
+      (err) => {
+        console.error("Failed to load coupons:", err);
+        setLoading(false);
+      }
     );
     return () => unsub();
   }, []);

@@ -13,7 +13,8 @@ export function useOverviewStats() {
     setError(false);
     try {
       setStats(await fetchOverviewStats());
-    } catch {
+    } catch (err) {
+      console.error("Failed to load overview stats:", err);
       setError(true);
     } finally {
       setLoading(false);

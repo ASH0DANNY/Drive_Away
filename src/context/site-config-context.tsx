@@ -55,8 +55,9 @@ export function SiteConfigProvider({ children }: { children: React.ReactNode }) 
           }
         }
       },
-      () => {
-        // Firestore unreachable / doc missing — defaults already rendered, no-op.
+      (err) => {
+        // Firestore unreachable / doc missing — defaults already rendered.
+        console.error("Failed to load siteConfig (defaults are still shown):", err);
       }
     );
     return () => unsub();
