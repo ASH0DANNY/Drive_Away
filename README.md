@@ -23,22 +23,21 @@ In the Firebase Console for `drive-away-77747`:
 3. **Firestore Database** — create the database if you haven't yet
    (Production mode is fine), then paste `firestore.rules` (project root)
    into the Rules tab so bookings/users/coupons are actually protected.
-4. **Firestore composite indexes** — `My Bookings` and the admin Bookings
-   status filter both combine a `where(...)` with an `orderBy(...)` on a
-   different field, which Firestore requires a composite index for. Either:
+4. **Firestore composite index** — the admin Bookings status filter
+   combines a `where("status", ...)` with an `orderBy("createdAt")` on a
+   different field, which Firestore requires a composite index for
+   (`My Bookings` used to need one too, but no longer does — see below).
+   Either:
    - run `firebase deploy --only firestore` (uses `firebase.json` +
      `firestore.indexes.json`, already set up in this project), or
-   - create them by hand in Console → Firestore Database → Indexes →
-     Composite → Add Index:
-     - `bookings`: `userId` Ascending + `createdAt` Descending
-     - `bookings`: `status` Ascending + `createdAt` Descending
+   - create it by hand in Console → Firestore Database → Indexes →
+     Composite → Add Index: `bookings` — `status` Ascending +
+     `createdAt` Descending.
 
-   Without these, those two views will silently show empty/incomplete
-   results instead of erroring loudly — Firestore does throw a real error
-   with a direct "create this index" link, and every data-fetching hook in
-   this project now logs that error to the browser console
-   (`console.error`), so if something looks empty that shouldn't be, check
-   devtools console first.
+   Without it, that one filtered view will error instead of showing
+   results — every data-fetching hook in this project logs Firestore
+   errors to the browser console (`console.error`), so if something looks
+   empty that shouldn't be, check devtools console first.
 
 ### Bootstrapping your first admin
 1. Sign up for an account normally on the live site (`/signup`).
