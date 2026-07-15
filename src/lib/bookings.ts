@@ -16,6 +16,8 @@ export type BookingStatus = "pending" | "confirmed" | "cancelled";
 export type PaymentStatus = "pending" | "paid" | "failed";
 export type PaymentMethod = "card" | "upi" | "wallet" | "offline";
 export type DiscountType = "none" | "percentage" | "fixed" | "coupon";
+export type RefundStatus = "not_applicable" | "pending" | "refunded";
+export type CancelledBy = "customer" | "admin";
 
 export type Booking = {
   id: string;
@@ -46,6 +48,12 @@ export type Booking = {
   transactionId: string | null;
   invoiceNumber: string;
   bookedByAdmin: boolean;
+  cancelledAt: unknown | null;
+  cancelledBy: CancelledBy | null;
+  cancellationCharge: number;
+  refundAmount: number;
+  refundStatus: RefundStatus;
+  refundedAt: unknown | null;
   createdAt?: unknown;
 };
 
@@ -59,6 +67,12 @@ export type NewBookingInput = Omit<
   | "transactionId"
   | "invoiceNumber"
   | "bookedByAdmin"
+  | "cancelledAt"
+  | "cancelledBy"
+  | "cancellationCharge"
+  | "refundAmount"
+  | "refundStatus"
+  | "refundedAt"
 >;
 
 function generateInvoiceNumber(): string {
@@ -84,6 +98,12 @@ export async function createBooking(input: NewBookingInput): Promise<string> {
     transactionId: null,
     invoiceNumber: generateInvoiceNumber(),
     bookedByAdmin: false,
+    cancelledAt: null,
+    cancelledBy: null,
+    cancellationCharge: 0,
+    refundAmount: 0,
+    refundStatus: "not_applicable" as RefundStatus,
+    refundedAt: null,
     createdAt: serverTimestamp(),
   });
   return ref.id;
@@ -102,6 +122,12 @@ export async function createOfflineBooking(
     transactionId,
     invoiceNumber: generateInvoiceNumber(),
     bookedByAdmin: true,
+    cancelledAt: null,
+    cancelledBy: null,
+    cancellationCharge: 0,
+    refundAmount: 0,
+    refundStatus: "not_applicable" as RefundStatus,
+    refundedAt: null,
     createdAt: serverTimestamp(),
   });
   await addDoc(collection(db, "payments"), {
@@ -175,4 +201,32 @@ export async function recordPaymentResult(
   });
 
   return paymentRef.id;
+}
+
+/**
+ * Cancels a booking, applying the cancellation-charge rule: a charge only
+ * ever applies to bookings paid through the online gateway; offline and
+ * unpaid bookings cancel free. See `computeCancellation` for the math.
+ */
+export async function cancelBooking(
+  booking: Booking,
+  cancelledBy: CancelledBy,
+  preview: { chargeAmount: number; refundAmount: number; refundStatus: RefundStatus }
+): Promise<void> {
+  await updateDoc(doc(db, "bookings", booking.id), {
+    status: "cancelled" as BookingStatus,
+    cancelledAt: serverTimestamp(),
+    cancelledBy,
+    cancellationCharge: preview.chargeAmount,
+    refundAmount: preview.refundAmount,
+    refundStatus: preview.refundStatus,
+  });
+}
+
+/** Admin confirms a pending refund has actually been sent (simulated — no real payment gateway refund API here). */
+export async function markRefunded(bookingId: string): Promise<void> {
+  await updateDoc(doc(db, "bookings", bookingId), {
+    refundStatus: "refunded" as RefundStatus,
+    refundedAt: serverTimestamp(),
+  });
 }

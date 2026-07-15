@@ -72,6 +72,8 @@ export type SiteConfig = {
   };
   settings: {
     onlinePaymentsEnabled: boolean;
+    cancellationChargeType: "percentage" | "fixed";
+    cancellationChargeValue: number;
   };
 };
 
@@ -183,6 +185,8 @@ export const defaultSiteConfig: SiteConfig = {
   },
   settings: {
     onlinePaymentsEnabled: true,
+    cancellationChargeType: "percentage",
+    cancellationChargeValue: 10,
   },
 };
 

@@ -2,9 +2,10 @@
 
 A full-stack self-drive car & bike rental platform: public marketing site,
 live-editable content and theme, fleet browsing, auth, booking + a dummy
-payment gateway, coupons, offline/walk-in billing, PDF invoices, and a
-complete admin dashboard — built on Next.js + Firebase (Spark/free plan)
-with zero server cost.
+payment gateway, coupons, offline/walk-in billing, cancellations with
+configurable refund charges, PDF invoices, and a complete admin
+dashboard — built on Next.js + Firebase (Spark/free plan) with zero
+server cost.
 
 ## Getting it running
 
@@ -110,6 +111,35 @@ not by hiding these values.
   contended maxUses code could theoretically be over-redeemed by a few
   under simultaneous use. Not a concern at rental-fleet scale; a Cloud
   Function would close the gap if you ever need it airtight.
+
+### Cancellation + refunds
+- Customers can cancel their own upcoming bookings from **My Bookings**;
+  admins can cancel any booking from the **Bookings Manager**. Both go
+  through the same confirmation dialog
+  (`src/components/site/cancel-booking-dialog.tsx`) showing exactly what
+  will be charged/refunded before confirming.
+- **The charge rule:** a cancellation charge only ever applies to bookings
+  paid through the online gateway (card/UPI/wallet). Offline/pay-at-pickup
+  bookings, and bookings that were never paid at all, cancel free — this
+  is enforced in `src/lib/cancellation.ts`, not just in the UI copy.
+- The charge is taken from the rental cost only; the refundable deposit
+  always passes through untouched.
+- Admin sets the charge in **Settings** — either a percentage or a fixed
+  ₹ amount, matching the same pattern used for coupons and offline
+  discounts.
+- A booking can only be cancelled before its pickup date.
+- Refunds are tracked (pending → refunded) but not actually issued — this
+  is a simulated payment system with no real gateway to call. Admins mark
+  a refund as sent from the Bookings Manager once it's been handled
+  outside the app.
+- Cancelled bookings show the charge/refund breakdown on their invoice PDF
+  too.
+- **Firestore rules were tightened for this feature**: previously a
+  signed-in customer could update *any* field on their own booking
+  document (a latent gap). Now customer self-writes are restricted to
+  exactly two recognized patterns — completing the dummy payment gateway,
+  and self-cancelling — enforced field-by-field in `firestore.rules`.
+  Redeploy the rules if you update from an earlier version.
 
 ### Online payments toggle + offline/walk-in billing
 - `/admin/settings` — one switch turns the dummy payment gateway off

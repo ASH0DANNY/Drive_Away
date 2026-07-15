@@ -215,6 +215,36 @@ export function generateBookingInvoicePdf(booking: Booking, business: BusinessDe
   doc.line(totalsX, afterTableY - 3, pageWidth - margin, afterTableY - 3);
   totalLine("Total paid", fmtMoney(booking.total), true);
 
+  // ============ CANCELLATION (only if applicable) ============
+  if (booking.status === "cancelled") {
+    afterTableY += 4;
+    doc.setLineWidth(0.3);
+    doc.line(margin, afterTableY, pageWidth - margin, afterTableY);
+    afterTableY += 5;
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(180, 40, 40);
+    doc.text("BOOKING CANCELLED", margin, afterTableY);
+    doc.setTextColor(0, 0, 0);
+    afterTableY += 5;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    if (booking.cancellationCharge > 0) {
+      doc.text(`Cancellation charge: ${fmtMoney(booking.cancellationCharge)}`, margin, afterTableY);
+      afterTableY += 4;
+    }
+    if (booking.refundStatus !== "not_applicable") {
+      doc.text(
+        `Refund ${booking.refundStatus === "refunded" ? "issued" : "pending"}: ${fmtMoney(booking.refundAmount)}`,
+        margin,
+        afterTableY
+      );
+      afterTableY += 4;
+    }
+  }
+
   // ============ TERMS & CONDITIONS ============
   let termsY = afterTableY + 8;
   doc.setLineWidth(0.3);

@@ -15,10 +15,10 @@ import { useSiteConfig } from "@/context/site-config-context";
 import { saveSiteConfig } from "@/lib/site-config";
 import { defaultSiteConfig, type SiteConfig } from "@/lib/default-content";
 
-type ContentFormValues = Omit<SiteConfig, "theme">;
+type ContentFormValues = Omit<SiteConfig, "theme" | "settings">;
 
-function stripTheme(config: SiteConfig): ContentFormValues {
-  const { theme: _theme, ...rest } = config;
+function stripNonContentFields(config: SiteConfig): ContentFormValues {
+  const { theme: _theme, settings: _settings, ...rest } = config;
   return rest;
 }
 
@@ -28,12 +28,12 @@ export default function ContentManagerPage() {
   const [saving, setSaving] = React.useState(false);
 
   const { register, control, handleSubmit, reset } = useForm<ContentFormValues>({
-    defaultValues: stripTheme(defaultSiteConfig),
+    defaultValues: stripNonContentFields(defaultSiteConfig),
   });
 
   React.useEffect(() => {
     if (isLive && !seeded.current) {
-      reset(stripTheme(config));
+      reset(stripNonContentFields(config));
       seeded.current = true;
     }
   }, [isLive, config, reset]);

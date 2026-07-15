@@ -9,8 +9,11 @@ rules_version = '2';
 // - users: everyone can read their own doc (and public fields needed for
 //   admin lists); only admins can write role. Users can update their own
 //   non-role fields.
-// - bookings: a user can create/read/update only their own bookings.
-//   Admins can read/update all (for the Bookings Manager).
+// - bookings: a user can create and read only their own bookings. Their
+//   only two allowed self-service updates are completing the dummy
+//   payment gateway and self-cancelling (see the two functions below) —
+//   anything else on a booking requires an admin. Admins can read/update
+//   all bookings (for the Bookings Manager and Offline Billing).
 // - payments: created by the client during the dummy payment flow, tied
 //   to a booking the user owns; admins can read all.
 
@@ -29,6 +32,34 @@ service cloud.firestore {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin";
+    }
+
+    // The only self-service write a customer can make to their own booking:
+    // transitioning it to "cancelled" and touching only the fields that
+    // transition involves. Blocks a customer from e.g. setting their own
+    // paymentStatus to "paid" or editing the total via a raw Firestore call.
+    function isOwnerCancellingBooking() {
+      return isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        resource.data.status != "cancelled" &&
+        request.resource.data.status == "cancelled" &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+          ["status", "cancelledAt", "cancelledBy", "cancellationCharge", "refundAmount", "refundStatus"]
+        );
+    }
+
+    // The other legitimate self-write: recording the outcome of the dummy
+    // payment gateway on their own still-pending booking. (This is a
+    // simulated gateway with no real server-side verification by design —
+    // these rules just prevent editing unrelated fields like `total`.)
+    function isOwnerCompletingPayment() {
+      return isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        resource.data.paymentStatus == "pending" &&
+        (request.resource.data.paymentStatus == "paid" || request.resource.data.paymentStatus == "failed") &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+          ["paymentStatus", "status", "paymentMethod", "transactionId"]
+        );
     }
 
     match /siteConfig/{docId} {
@@ -57,8 +88,7 @@ service cloud.firestore {
       // can also create one on behalf of a walk-in (see WALKIN_USER_ID)
       allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid) ||
                        isAdmin();
-      allow update: if isAdmin() ||
-                       (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow update: if isAdmin() || isOwnerCancellingBooking() || isOwnerCompletingPayment();
     }
 
     match /payments/{paymentId} {

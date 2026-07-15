@@ -4,7 +4,7 @@ import * as React from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { where } from "firebase/firestore";
-import { Loader2, Tag, RefreshCw } from "lucide-react";
+import { Loader2, Tag, RefreshCw, Ban, BadgeIndianRupee } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -28,14 +28,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { InvoiceActions } from "@/components/site/invoice-actions";
+import { CancelBookingDialog } from "@/components/site/cancel-booking-dialog";
 import { usePaginatedQuery } from "@/lib/hooks/use-paginated-query";
 import { updateBookingFields } from "@/lib/bookings-admin";
-import { markBookingPaidOffline } from "@/lib/bookings";
+import { markBookingPaidOffline, markRefunded } from "@/lib/bookings";
+import { isCancellable } from "@/lib/cancellation";
 import type { Booking, BookingStatus, PaymentStatus, DiscountType } from "@/lib/bookings";
 
 function paymentBadgeVariant(status: PaymentStatus) {
   if (status === "paid") return "success" as const;
   if (status === "failed") return "destructive" as const;
+  return "outline" as const;
+}
+
+function refundBadgeVariant(status: Booking["refundStatus"]) {
+  if (status === "refunded") return "success" as const;
+  if (status === "pending") return "destructive" as const;
   return "outline" as const;
 }
 
@@ -140,6 +148,8 @@ function MarkPaidDialog({
 
 function BookingActions({ booking, onChanged }: { booking: Booking; onChanged: () => void }) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [cancelOpen, setCancelOpen] = React.useState(false);
+  const [refunding, setRefunding] = React.useState(false);
 
   const handleStatus = async (value: BookingStatus) => {
     try {
@@ -158,6 +168,19 @@ function BookingActions({ booking, onChanged }: { booking: Booking; onChanged: (
       onChanged();
     } catch {
       toast.error("Couldn't update — try again.");
+    }
+  };
+
+  const handleMarkRefunded = async () => {
+    setRefunding(true);
+    try {
+      await markRefunded(booking.id);
+      toast.success("Marked as refunded.");
+      onChanged();
+    } catch {
+      toast.error("Couldn't update — try again.");
+    } finally {
+      setRefunding(false);
     }
   };
 
@@ -191,7 +214,27 @@ function BookingActions({ booking, onChanged }: { booking: Booking; onChanged: (
       )}
       {booking.paymentStatus === "paid" && <InvoiceActions booking={booking} />}
 
+      {isCancellable(booking) && (
+        <Button size="sm" variant="outline" onClick={() => setCancelOpen(true)}>
+          <Ban className="size-3.5" /> Cancel
+        </Button>
+      )}
+
+      {booking.refundStatus === "pending" && (
+        <Button size="sm" variant="outline" onClick={handleMarkRefunded} disabled={refunding}>
+          {refunding ? <Loader2 className="size-3.5 animate-spin" /> : <BadgeIndianRupee className="size-3.5" />}
+          Mark refunded
+        </Button>
+      )}
+
       <MarkPaidDialog booking={booking} open={dialogOpen} onOpenChange={setDialogOpen} onChanged={onChanged} />
+      <CancelBookingDialog
+        booking={booking}
+        cancelledBy="admin"
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        onCancelled={onChanged}
+      />
     </div>
   );
 }
@@ -259,6 +302,7 @@ export default function BookingsManagerPage() {
                   <TableHead>Dates</TableHead>
                   <TableHead>Total</TableHead>
                   <TableHead>Payment</TableHead>
+                  <TableHead>Refund</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -281,6 +325,15 @@ export default function BookingsManagerPage() {
                       <Badge variant={paymentBadgeVariant(b.paymentStatus)} className="capitalize">
                         {b.paymentStatus}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {b.refundStatus !== "not_applicable" && (
+                        <Badge variant={refundBadgeVariant(b.refundStatus)} className="capitalize">
+                          {b.refundStatus === "pending"
+                            ? `₹${b.refundAmount.toLocaleString("en-IN")} due`
+                            : "Refunded"}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <BookingActions booking={b} onChanged={refresh} />
