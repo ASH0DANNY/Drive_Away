@@ -6,6 +6,7 @@ export type OverviewStats = {
   confirmedBookings: number;
   pendingPayments: number;
   revenue: number;
+  overdueReturns: number;
 };
 
 /**
@@ -15,13 +16,18 @@ export type OverviewStats = {
  * Cost stays flat no matter how many bookings/vehicles exist.
  */
 export async function fetchOverviewStats(): Promise<OverviewStats> {
-  const [vehicleCountSnap, confirmedSnap, pendingSnap, revenueSnap] = await Promise.all([
+  const today = new Date().toISOString().slice(0, 10);
+
+  const [vehicleCountSnap, confirmedSnap, pendingSnap, revenueSnap, overdueSnap] = await Promise.all([
     getCountFromServer(collection(db, "vehicles")),
     getCountFromServer(query(collection(db, "bookings"), where("status", "==", "confirmed"))),
     getCountFromServer(query(collection(db, "bookings"), where("paymentStatus", "==", "pending"))),
     getAggregateFromServer(query(collection(db, "bookings"), where("paymentStatus", "==", "paid")), {
       revenue: sum("total"),
     }),
+    getCountFromServer(
+      query(collection(db, "bookings"), where("status", "==", "confirmed"), where("endDate", "<", today))
+    ),
   ]);
 
   return {
@@ -29,5 +35,6 @@ export async function fetchOverviewStats(): Promise<OverviewStats> {
     confirmedBookings: confirmedSnap.data().count,
     pendingPayments: pendingSnap.data().count,
     revenue: revenueSnap.data().revenue ?? 0,
+    overdueReturns: overdueSnap.data().count,
   };
 }

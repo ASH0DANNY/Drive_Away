@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { format } from "date-fns";
-import { CarFront, Ticket, IndianRupee, Clock, ArrowUpRight, RefreshCw } from "lucide-react";
+import { CarFront, Ticket, IndianRupee, Clock, ArrowUpRight, RefreshCw, TriangleAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,7 +71,7 @@ export default function AdminOverviewPage() {
         </Button>
       </div>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard icon={CarFront} label="Vehicles listed" value={String(stats?.vehicleCount ?? 0)} loading={statsLoading} />
         <StatCard icon={Ticket} label="Confirmed bookings" value={String(stats?.confirmedBookings ?? 0)} loading={statsLoading} />
         <StatCard
@@ -81,6 +81,7 @@ export default function AdminOverviewPage() {
           loading={statsLoading}
         />
         <StatCard icon={Clock} label="Awaiting payment" value={String(stats?.pendingPayments ?? 0)} loading={statsLoading} />
+        <StatCard icon={TriangleAlert} label="Overdue returns" value={String(stats?.overdueReturns ?? 0)} loading={statsLoading} />
       </div>
 
       <div className="mt-8">

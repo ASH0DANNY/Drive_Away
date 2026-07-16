@@ -10,10 +10,12 @@ rules_version = '2';
 //   admin lists); only admins can write role. Users can update their own
 //   non-role fields.
 // - bookings: a user can create and read only their own bookings. Their
-//   only two allowed self-service updates are completing the dummy
-//   payment gateway and self-cancelling (see the two functions below) —
-//   anything else on a booking requires an admin. Admins can read/update
-//   all bookings (for the Bookings Manager and Offline Billing).
+//   only allowed self-service updates are completing the dummy payment
+//   gateway, self-cancelling, and requesting/withdrawing a reschedule
+//   (see the functions below) — anything else on a booking, including
+//   approving/rejecting a reschedule or editing dates directly, requires
+//   an admin. Admins can read/update all bookings (for the Bookings
+//   Manager and Offline Billing).
 // - payments: created by the client during the dummy payment flow, tied
 //   to a booking the user owns; admins can read all.
 
@@ -62,6 +64,32 @@ service cloud.firestore {
         );
     }
 
+    // Requesting a reschedule: only from "none"/"rejected" to "pending",
+    // touching only the request fields. Admin review (approve/reject,
+    // which also edits startDate/endDate/pricing) requires isAdmin().
+    function isOwnerRequestingReschedule() {
+      return isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        resource.data.rescheduleStatus != "pending" &&
+        request.resource.data.rescheduleStatus == "pending" &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+          ["rescheduleStatus", "rescheduleRequestedStartDate", "rescheduleRequestedEndDate",
+           "rescheduleReason", "rescheduleRequestedBy", "rescheduleRequestedAt"]
+        );
+    }
+
+    // Withdrawing their own still-pending request.
+    function isOwnerWithdrawingReschedule() {
+      return isSignedIn() &&
+        resource.data.userId == request.auth.uid &&
+        resource.data.rescheduleStatus == "pending" &&
+        request.resource.data.rescheduleStatus == "none" &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(
+          ["rescheduleStatus", "rescheduleRequestedStartDate", "rescheduleRequestedEndDate",
+           "rescheduleReason", "rescheduleRequestedBy", "rescheduleRequestedAt"]
+        );
+    }
+
     match /siteConfig/{docId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -88,7 +116,11 @@ service cloud.firestore {
       // can also create one on behalf of a walk-in (see WALKIN_USER_ID)
       allow create: if (isSignedIn() && request.resource.data.userId == request.auth.uid) ||
                        isAdmin();
-      allow update: if isAdmin() || isOwnerCancellingBooking() || isOwnerCompletingPayment();
+      allow update: if isAdmin() ||
+                       isOwnerCancellingBooking() ||
+                       isOwnerCompletingPayment() ||
+                       isOwnerRequestingReschedule() ||
+                       isOwnerWithdrawingReschedule();
     }
 
     match /payments/{paymentId} {

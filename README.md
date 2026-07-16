@@ -3,9 +3,9 @@
 A full-stack self-drive car & bike rental platform: public marketing site,
 live-editable content and theme, fleet browsing, auth, booking + a dummy
 payment gateway, coupons, offline/walk-in billing, cancellations with
-configurable refund charges, PDF invoices, and a complete admin
-dashboard — built on Next.js + Firebase (Spark/free plan) with zero
-server cost.
+configurable refund charges, reschedule requests with clash detection,
+overdue-return tracking, PDF invoices, and a complete admin dashboard —
+built on Next.js + Firebase (Spark/free plan) with zero server cost.
 
 ## Getting it running
 
@@ -24,21 +24,24 @@ In the Firebase Console for `drive-away-77747`:
 3. **Firestore Database** — create the database if you haven't yet
    (Production mode is fine), then paste `firestore.rules` (project root)
    into the Rules tab so bookings/users/coupons are actually protected.
-4. **Firestore composite index** — the admin Bookings status filter
-   combines a `where("status", ...)` with an `orderBy("createdAt")` on a
-   different field, which Firestore requires a composite index for
-   (`My Bookings` used to need one too, but no longer does — see below).
-   Either:
+4. **Firestore composite indexes** — two views need one each. Either:
    - run `firebase deploy --only firestore` (uses `firebase.json` +
      `firestore.indexes.json`, already set up in this project), or
-   - create it by hand in Console → Firestore Database → Indexes →
-     Composite → Add Index: `bookings` — `status` Ascending +
-     `createdAt` Descending.
+   - create them by hand in Console → Firestore Database → Indexes →
+     Composite → Add Index:
+     - `bookings` — `status` Ascending + `createdAt` Descending (the
+       admin Bookings status filter — combines equality with an
+       `orderBy` on a different field)
+     - `bookings` — `status` Ascending + `endDate` Ascending (the
+       Overview page's "Overdue returns" count — combines equality with
+       a range filter on a different field)
 
-   Without it, that one filtered view will error instead of showing
+   (`My Bookings` used to need an index too, but no longer does.)
+
+   Without these, those two specific views will error instead of showing
    results — every data-fetching hook in this project logs Firestore
    errors to the browser console (`console.error`), so if something looks
-   empty that shouldn't be, check devtools console first.
+   empty/zero that shouldn't be, check devtools console first.
 
 ### Bootstrapping your first admin
 1. Sign up for an account normally on the live site (`/signup`).
@@ -140,6 +143,44 @@ not by hiding these values.
   exactly two recognized patterns — completing the dummy payment gateway,
   and self-cancelling — enforced field-by-field in `firestore.rules`.
   Redeploy the rules if you update from an earlier version.
+
+### Rescheduling + overdue returns
+- **Online bookings (case A):** customers request new dates from My
+  Bookings (`src/components/site/reschedule-request-dialog.tsx`) — this
+  never changes the booking immediately, it just sets it to "pending
+  review." Only available for confirmed, online-paid bookings that haven't
+  started yet, and only one request can be in flight at a time (the
+  customer can withdraw it before a decision is made).
+- Admin reviews every pending request in the Bookings Manager
+  (`src/components/admin/reschedule-review-dialog.tsx`), which
+  automatically checks the requested new dates against the vehicle's
+  other confirmed bookings before you decide — a clear "clashes with N
+  other bookings" warning with names and dates if there's a conflict, or
+  a green "no clash" confirmation if it's clear. Declining leaves the
+  original booking untouched; approving applies the new dates and
+  **recalculates pricing** (days/subtotal/service fee/total) for the new
+  duration — the discount amount and deposit carry over unchanged.
+- **Offline bookings (case B):** no request/approval flow — admin edits
+  dates directly on any booking via "Edit dates"
+  (`src/components/admin/edit-dates-dialog.tsx`), which runs the same
+  clash check and repricing, just without needing a customer-submitted
+  request first. This is also available as a general admin override on
+  any booking, not just offline ones.
+- **Clash detection** (`src/lib/availability.ts`) compares the requested
+  range against every other *confirmed* booking for that same vehicle —
+  this is what "admin can see bookings don't clash" means in practice:
+  the check runs automatically, admin doesn't have to manually cross-
+  reference anything.
+- **Vehicle not returned on time:** a confirmed booking whose return date
+  has passed without being marked returned shows a "Return overdue"
+  badge — in My Bookings for the customer, and in the Bookings Manager
+  (with an "Overdue returns" count on the Overview dashboard) for admin.
+  This is computed live from `endDate` vs. today (`isOverdue()` in
+  `src/lib/bookings.ts`), not a stored status that needs a background job
+  to update. Admin closes out a rental with "Mark returned" once the
+  vehicle actually comes back, which moves it to a new `completed` status
+  (booking statuses are now `pending → confirmed → completed`, or
+  `cancelled` at various points).
 
 ### Online payments toggle + offline/walk-in billing
 - `/admin/settings` — one switch turns the dummy payment gateway off

@@ -4,7 +4,7 @@ import * as React from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { where } from "firebase/firestore";
-import { Loader2, Tag, RefreshCw, Ban, BadgeIndianRupee } from "lucide-react";
+import { Loader2, Tag, RefreshCw, Ban, BadgeIndianRupee, CalendarClock, PackageCheck, TriangleAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -29,9 +29,11 @@ import {
 } from "@/components/ui/select";
 import { InvoiceActions } from "@/components/site/invoice-actions";
 import { CancelBookingDialog } from "@/components/site/cancel-booking-dialog";
+import { RescheduleReviewDialog } from "@/components/admin/reschedule-review-dialog";
+import { EditDatesDialog } from "@/components/admin/edit-dates-dialog";
 import { usePaginatedQuery } from "@/lib/hooks/use-paginated-query";
 import { updateBookingFields } from "@/lib/bookings-admin";
-import { markBookingPaidOffline, markRefunded } from "@/lib/bookings";
+import { markBookingPaidOffline, markRefunded, markReturned, isOverdue } from "@/lib/bookings";
 import { isCancellable } from "@/lib/cancellation";
 import type { Booking, BookingStatus, PaymentStatus, DiscountType } from "@/lib/bookings";
 
@@ -146,10 +148,34 @@ function MarkPaidDialog({
   );
 }
 
+function DatesCell({ booking }: { booking: Booking }) {
+  const overdue = isOverdue(booking);
+  return (
+    <div>
+      <p className={`font-mono-num text-xs ${overdue ? "text-destructive font-medium" : ""}`}>
+        {format(new Date(booking.startDate), "d MMM")} – {format(new Date(booking.endDate), "d MMM yyyy")}
+      </p>
+      {overdue && (
+        <span className="mt-1 flex items-center gap-1 text-xs text-destructive">
+          <TriangleAlert className="size-3" /> Not returned
+        </span>
+      )}
+      {booking.rescheduleStatus === "pending" && (
+        <span className="mt-1 flex items-center gap-1 text-xs text-primary">
+          <CalendarClock className="size-3" /> Reschedule requested
+        </span>
+      )}
+    </div>
+  );
+}
+
 function BookingActions({ booking, onChanged }: { booking: Booking; onChanged: () => void }) {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [cancelOpen, setCancelOpen] = React.useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = React.useState(false);
+  const [editDatesOpen, setEditDatesOpen] = React.useState(false);
   const [refunding, setRefunding] = React.useState(false);
+  const [returning, setReturning] = React.useState(false);
 
   const handleStatus = async (value: BookingStatus) => {
     try {
@@ -184,6 +210,19 @@ function BookingActions({ booking, onChanged }: { booking: Booking; onChanged: (
     }
   };
 
+  const handleMarkReturned = async () => {
+    setReturning(true);
+    try {
+      await markReturned(booking.id);
+      toast.success("Marked as returned.");
+      onChanged();
+    } catch {
+      toast.error("Couldn't update — try again.");
+    } finally {
+      setReturning(false);
+    }
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Select value={booking.status} onValueChange={(v) => handleStatus(v as BookingStatus)}>
@@ -193,6 +232,7 @@ function BookingActions({ booking, onChanged }: { booking: Booking; onChanged: (
         <SelectContent>
           <SelectItem value="pending">Pending</SelectItem>
           <SelectItem value="confirmed">Confirmed</SelectItem>
+          <SelectItem value="completed">Completed</SelectItem>
           <SelectItem value="cancelled">Cancelled</SelectItem>
         </SelectContent>
       </Select>
@@ -213,6 +253,25 @@ function BookingActions({ booking, onChanged }: { booking: Booking; onChanged: (
         </Button>
       )}
       {booking.paymentStatus === "paid" && <InvoiceActions booking={booking} />}
+
+      {booking.rescheduleStatus === "pending" ? (
+        <Button size="sm" onClick={() => setRescheduleOpen(true)}>
+          <CalendarClock className="size-3.5" /> Review request
+        </Button>
+      ) : (
+        booking.status !== "cancelled" && (
+          <Button size="sm" variant="outline" onClick={() => setEditDatesOpen(true)}>
+            <CalendarClock className="size-3.5" /> Edit dates
+          </Button>
+        )
+      )}
+
+      {booking.status === "confirmed" && (
+        <Button size="sm" variant="outline" onClick={handleMarkReturned} disabled={returning}>
+          {returning ? <Loader2 className="size-3.5 animate-spin" /> : <PackageCheck className="size-3.5" />}
+          Mark returned
+        </Button>
+      )}
 
       {isCancellable(booking) && (
         <Button size="sm" variant="outline" onClick={() => setCancelOpen(true)}>
@@ -235,6 +294,13 @@ function BookingActions({ booking, onChanged }: { booking: Booking; onChanged: (
         onOpenChange={setCancelOpen}
         onCancelled={onChanged}
       />
+      <RescheduleReviewDialog
+        booking={booking}
+        open={rescheduleOpen}
+        onOpenChange={setRescheduleOpen}
+        onDecided={onChanged}
+      />
+      <EditDatesDialog booking={booking} open={editDatesOpen} onOpenChange={setEditDatesOpen} onSaved={onChanged} />
     </div>
   );
 }
@@ -275,6 +341,7 @@ export default function BookingsManagerPage() {
               <SelectItem value="all">All statuses</SelectItem>
               <SelectItem value="pending">Pending</SelectItem>
               <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
@@ -317,8 +384,8 @@ export default function BookingsManagerPage() {
                       </p>
                     </TableCell>
                     <TableCell>{b.vehicleName}</TableCell>
-                    <TableCell className="font-mono-num text-xs">
-                      {format(new Date(b.startDate), "d MMM")} – {format(new Date(b.endDate), "d MMM yyyy")}
+                    <TableCell>
+                      <DatesCell booking={b} />
                     </TableCell>
                     <TableCell className="font-mono-num">₹{b.total.toLocaleString("en-IN")}</TableCell>
                     <TableCell>

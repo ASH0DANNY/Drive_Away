@@ -2,24 +2,33 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { format } from "date-fns";
-import { Car, Bike, Ticket, LogIn, CalendarDays, Ban } from "lucide-react";
+import { Car, Bike, Ticket, LogIn, CalendarDays, Ban, CalendarClock, Loader2, TriangleAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { InvoiceActions } from "@/components/site/invoice-actions";
 import { CancelBookingDialog } from "@/components/site/cancel-booking-dialog";
+import { RescheduleRequestDialog } from "@/components/site/reschedule-request-dialog";
 import { useAuth } from "@/context/auth-context";
 import { useSiteConfig } from "@/context/site-config-context";
 import { useMyBookings } from "@/lib/hooks/use-my-bookings";
 import { isCancellable } from "@/lib/cancellation";
-import type { Booking } from "@/lib/bookings";
+import { isRescheduleRequestable, withdrawReschedule } from "@/lib/reschedule";
+import { isOverdue, type Booking } from "@/lib/bookings";
 import { cn } from "@/lib/utils";
 
 function StatusBadge({ booking }: { booking: Booking }) {
   if (booking.status === "cancelled") {
     return <Badge variant="outline">Cancelled</Badge>;
+  }
+  if (booking.status === "completed") {
+    return <Badge variant="outline">Completed</Badge>;
+  }
+  if (isOverdue(booking)) {
+    return <Badge variant="destructive">Return overdue</Badge>;
   }
   if (booking.paymentStatus === "paid" && booking.status === "confirmed") {
     return <Badge variant="success">Confirmed</Badge>;
@@ -42,11 +51,66 @@ function RefundNote({ booking }: { booking: Booking }) {
   );
 }
 
-function BookingRow({ booking, onlinePaymentsEnabled }: { booking: Booking; onlinePaymentsEnabled: boolean }) {
+function RescheduleNote({ booking }: { booking: Booking }) {
+  const [withdrawing, setWithdrawing] = React.useState(false);
+
+  if (booking.rescheduleStatus === "none") return null;
+
+  const handleWithdraw = async () => {
+    setWithdrawing(true);
+    try {
+      await withdrawReschedule(booking.id);
+      toast.success("Request withdrawn.");
+    } catch {
+      toast.error("Couldn't withdraw — try again.");
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
+  if (booking.rescheduleStatus === "pending") {
+    return (
+      <div className="mt-1.5 flex items-center gap-2 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <CalendarClock className="size-3.5" />
+          Reschedule to {booking.rescheduleRequestedStartDate}–{booking.rescheduleRequestedEndDate} pending review
+        </span>
+        <button
+          onClick={handleWithdraw}
+          disabled={withdrawing}
+          className="font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
+        >
+          {withdrawing ? "Withdrawing…" : "Withdraw"}
+        </button>
+      </div>
+    );
+  }
+
+  if (booking.rescheduleStatus === "rejected") {
+    return (
+      <p className="mt-1.5 flex items-center gap-1 text-xs text-destructive">
+        <TriangleAlert className="size-3.5" />
+        Reschedule declined{booking.rescheduleReviewNote ? `: ${booking.rescheduleReviewNote}` : ""}
+      </p>
+    );
+  }
+
+  return null; // "approved" — the dates/badge above already reflect the new schedule
+}
+
+function BookingRow({
+  booking,
+  onlinePaymentsEnabled,
+}: {
+  booking: Booking;
+  onlinePaymentsEnabled: boolean;
+}) {
   const Icon = booking.vehicleType === "car" ? Car : Bike;
   const isPaid = booking.paymentStatus === "paid";
   const [cancelOpen, setCancelOpen] = React.useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = React.useState(false);
   const canCancel = isCancellable(booking);
+  const canReschedule = isRescheduleRequestable(booking);
 
   return (
     <Card>
@@ -72,6 +136,7 @@ function BookingRow({ booking, onlinePaymentsEnabled }: { booking: Booking; onli
               <StatusBadge booking={booking} />
             </div>
             <RefundNote booking={booking} />
+            <RescheduleNote booking={booking} />
           </div>
         </div>
 
@@ -79,7 +144,7 @@ function BookingRow({ booking, onlinePaymentsEnabled }: { booking: Booking; onli
           <span className="font-mono-num text-base font-semibold">
             ₹{booking.total.toLocaleString("en-IN")}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             {isPaid && <InvoiceActions booking={booking} />}
             {!isPaid && booking.status !== "cancelled" && (
               onlinePaymentsEnabled ? (
@@ -91,6 +156,11 @@ function BookingRow({ booking, onlinePaymentsEnabled }: { booking: Booking; onli
               ) : (
                 <span className="text-xs text-muted-foreground">Pay at pickup</span>
               )
+            )}
+            {canReschedule && (
+              <Button size="sm" variant="outline" onClick={() => setRescheduleOpen(true)}>
+                <CalendarClock className="size-3.5" /> Reschedule
+              </Button>
             )}
             {canCancel && (
               <Button size="sm" variant="outline" onClick={() => setCancelOpen(true)}>
@@ -106,6 +176,11 @@ function BookingRow({ booking, onlinePaymentsEnabled }: { booking: Booking; onli
         cancelledBy="customer"
         open={cancelOpen}
         onOpenChange={setCancelOpen}
+      />
+      <RescheduleRequestDialog
+        booking={booking}
+        open={rescheduleOpen}
+        onOpenChange={setRescheduleOpen}
       />
     </Card>
   );
@@ -146,7 +221,11 @@ export default function MyBookingsPage() {
           </>
         ) : bookings.length > 0 ? (
           bookings.map((b) => (
-            <BookingRow key={b.id} booking={b} onlinePaymentsEnabled={config.settings.onlinePaymentsEnabled} />
+            <BookingRow
+              key={b.id}
+              booking={b}
+              onlinePaymentsEnabled={config.settings.onlinePaymentsEnabled}
+            />
           ))
         ) : (
           <div className="flex flex-col items-center rounded-xl border border-dashed border-border py-16 text-center">
