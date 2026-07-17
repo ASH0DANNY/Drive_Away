@@ -4,8 +4,9 @@ A full-stack self-drive car & bike rental platform: public marketing site,
 live-editable content and theme, fleet browsing, auth, booking + a dummy
 payment gateway, coupons, offline/walk-in billing, cancellations with
 configurable refund charges, reschedule requests with clash detection,
-overdue-return tracking, PDF invoices, and a complete admin dashboard —
-built on Next.js + Firebase (Spark/free plan) with zero server cost.
+overdue-return tracking, PDF invoices, admin reports/analytics with PDF
+and Excel export, and a complete admin dashboard — built on Next.js +
+Firebase (Spark/free plan) with zero server cost.
 
 ## Getting it running
 
@@ -204,6 +205,39 @@ not by hiding these values.
 - Business/invoice details (legal name, Tax ID/GSTIN, address, terms) are
   managed once in Content Manager's Footer tab and feed both the website
   footer and every invoice
+
+### Reports & analytics
+- `/admin/reports` — pick a date range (last 7/30/90 days, this month, or
+  custom) and get: total revenue, total bookings, average booking value,
+  cancellation rate, a daily revenue chart, revenue broken down by
+  online/offline and car/bike, cancellation & refund totals, top vehicles
+  by revenue, and coupon usage — all computed from the same `bookings`
+  data everything else in the app already writes to.
+- **Export to PDF** (`src/lib/report-pdf.ts`, jsPDF + jspdf-autotable) —
+  a proper multi-section document with headings (Summary, Revenue
+  Breakdown, Cancellations & Refunds, Top Vehicles, Coupon Usage), page
+  breaks when a section won't fit, and a page-numbered footer. "View"
+  opens it in a new tab, "Download" saves it.
+- **Export to Excel** (`src/lib/report-excel.ts`, ExcelJS) — a real
+  multi-sheet workbook (Summary, Revenue Breakdown, Status Breakdown, Top
+  Vehicles, Coupon Usage, Daily Revenue, and a raw Bookings sheet for
+  further pivoting), with bold styled header rows and sensible column
+  widths.
+  - *Package note:* the obvious choice here is the `xlsx` (SheetJS)
+    package, but the version on npm has known high-severity prototype-
+    pollution/ReDoS advisories and is unmaintained there. Those specific
+    vulnerabilities are in *parsing* untrusted spreadsheet files — a
+    pure-export use case like this one isn't exposed to them — but since
+    an equally capable, actively-maintained alternative exists for
+    writing `.xlsx` files, this project uses ExcelJS instead. Worth
+    remembering if a future feature ever needs to *import/parse*
+    spreadsheets: don't reach for `xlsx` for that without addressing
+    those advisories first.
+- Data for a report is fetched with a single range filter on `createdAt`
+  (capped at 1000 bookings), which needs no composite index — everything
+  else (breakdowns, top vehicles, daily series) is computed client-side
+  since Firestore has no native group-by/aggregation for that shape of
+  query.
 
 ### Admin dashboard (`/admin`)
 Guarded by `AdminGuard` (`src/components/admin/admin-guard.tsx`):

@@ -12,12 +12,14 @@ import {
   BadgePercent,
   Receipt,
   Settings,
+  BarChart3,
   ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
+  { href: "/admin/reports", label: "Reports", icon: BarChart3 },
   { href: "/admin/content", label: "Content", icon: FileText },
   { href: "/admin/theme", label: "Theme", icon: Palette },
   { href: "/admin/fleet", label: "Fleet", icon: CarFront },
