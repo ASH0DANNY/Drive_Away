@@ -8,7 +8,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { format, differenceInCalendarDays } from "date-fns";
-import { Loader2, ShieldCheck, ArrowLeft, LogIn, Tag, X, BadgePercent } from "lucide-react";
+import { Loader2, ShieldCheck, ArrowLeft, LogIn, Tag, X, BadgePercent, TriangleAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,12 +16,14 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AvailableOffers } from "@/components/site/available-offers";
 import { useAuth } from "@/context/auth-context";
 import { useSiteConfig } from "@/context/site-config-context";
 import { useVehicle } from "@/lib/hooks/use-vehicle";
 import { computePricing } from "@/lib/pricing";
-import { createBooking, isFirstBooking } from "@/lib/bookings";
-import { validateCoupon, redeemCoupon, type Coupon } from "@/lib/coupons";
+import { createBooking, isFirstBooking as checkIsFirstBooking } from "@/lib/bookings";
+import { findClashingBookings } from "@/lib/availability";
+import { validateCoupon, redeemCoupon, type Coupon, type EligibleOffer } from "@/lib/coupons";
 import { checkoutSchema, type CheckoutValues } from "@/lib/validation/checkout";
 
 export default function CheckoutPage({ params }: { params: Promise<{ id: string }> }) {
@@ -43,6 +45,11 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
   const [appliedCoupon, setAppliedCoupon] = React.useState<{ coupon: Coupon; discountAmount: number } | null>(
     null
   );
+  const [isFirstBooking, setIsFirstBooking] = React.useState(false);
+
+  React.useEffect(() => {
+    if (user) checkIsFirstBooking(user.uid).then(setIsFirstBooking).catch(() => setIsFirstBooking(false));
+  }, [user]);
 
   const {
     register,
@@ -104,16 +111,20 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
     );
   }
 
+  const applyOffer = (offer: EligibleOffer) => {
+    setAppliedCoupon(offer);
+    setCouponError(null);
+    toast.success(`"${offer.coupon.code}" applied — ₹${offer.discountAmount.toLocaleString("en-IN")} off.`);
+  };
+
   const handleApplyCoupon = async () => {
     if (!couponInput.trim()) return;
     setCouponChecking(true);
     setCouponError(null);
     try {
-      const firstBooking = await isFirstBooking(user.uid);
-      const result = await validateCoupon(couponInput, { subtotal, isFirstBooking: firstBooking });
+      const result = await validateCoupon(couponInput, { subtotal, isFirstBooking });
       if (result.ok) {
-        setAppliedCoupon({ coupon: result.coupon, discountAmount: result.discountAmount });
-        toast.success(`"${result.coupon.code}" applied — ₹${result.discountAmount.toLocaleString("en-IN")} off.`);
+        applyOffer({ coupon: result.coupon, discountAmount: result.discountAmount });
       } else {
         setCouponError(result.message);
       }
@@ -127,6 +138,18 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
   const onSubmit = async (values: CheckoutValues) => {
     setSubmitting(true);
     try {
+      // Authoritative re-check right before creating the booking — the
+      // widget on the vehicle page already checks this, but dates could
+      // have been booked by someone else in the meantime, or this page
+      // could have been reached directly via URL without that check ever
+      // running.
+      const clashes = await findClashingBookings(vehicle.id, start, end);
+      if (clashes.length > 0) {
+        toast.error("Those dates were just booked by someone else — please pick different dates.");
+        setSubmitting(false);
+        return;
+      }
+
       const bookingId = await createBooking({
         userId: user.uid,
         vehicleId: vehicle.id,
@@ -273,7 +296,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
               {appliedCoupon ? (
                 <div className="mb-4 flex items-center justify-between rounded-lg bg-success/10 px-3 py-2 text-sm">
                   <span className="flex items-center gap-1.5 text-success">
-                    <Tag className="size-3.5" /> {appliedCoupon.coupon.code}
+                    <Tag className="size-3.5" /> {appliedCoupon.coupon.code} applied
                   </span>
                   <button
                     type="button"
@@ -288,28 +311,31 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                   </button>
                 </div>
               ) : (
-                <div className="mb-4">
-                  <div className="flex gap-2">
-                    <Input
-                      value={couponInput}
-                      onChange={(e) => {
-                        setCouponInput(e.target.value);
-                        setCouponError(null);
-                      }}
-                      placeholder="Promo code"
-                      className="uppercase"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={handleApplyCoupon}
-                      disabled={couponChecking || !couponInput.trim()}
-                    >
-                      {couponChecking ? <Loader2 className="size-4 animate-spin" /> : "Apply"}
-                    </Button>
+                <>
+                  <AvailableOffers subtotal={subtotal} isFirstBooking={isFirstBooking} onSelect={applyOffer} />
+                  <div className="mb-4">
+                    <div className="flex gap-2">
+                      <Input
+                        value={couponInput}
+                        onChange={(e) => {
+                          setCouponInput(e.target.value);
+                          setCouponError(null);
+                        }}
+                        placeholder="Have another code?"
+                        className="uppercase"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleApplyCoupon}
+                        disabled={couponChecking || !couponInput.trim()}
+                      >
+                        {couponChecking ? <Loader2 className="size-4 animate-spin" /> : "Apply"}
+                      </Button>
+                    </div>
+                    {couponError && <p className="mt-1.5 text-xs text-destructive">{couponError}</p>}
                   </div>
-                  {couponError && <p className="mt-1.5 text-xs text-destructive">{couponError}</p>}
-                </div>
+                </>
               )}
 
               <div className="space-y-2 text-sm">
@@ -319,7 +345,7 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-success">
-                    <span>Discount</span>
+                    <span>Discount{appliedCoupon ? ` (${appliedCoupon.coupon.code})` : ""}</span>
                     <span className="font-mono-num">−₹{discountAmount.toLocaleString("en-IN")}</span>
                   </div>
                 )}
@@ -345,6 +371,10 @@ export default function CheckoutPage({ params }: { params: Promise<{ id: string 
                 {onlinePaymentsEnabled
                   ? "Payment is simulated in this preview — no real charge is made."
                   : "You'll pay the total amount in person when you pick up the vehicle."}
+              </p>
+              <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <TriangleAlert className="size-3.5 shrink-0" />
+                Dates are re-checked for availability at submit.
               </p>
             </CardContent>
           </Card>

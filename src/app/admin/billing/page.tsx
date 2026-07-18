@@ -3,7 +3,7 @@
 import * as React from "react";
 import { format, addDays, differenceInCalendarDays } from "date-fns";
 import { toast } from "sonner";
-import { Loader2, Receipt, CheckCircle2 } from "lucide-react";
+import { Loader2, Receipt, CheckCircle2, TriangleAlert, ShieldCheck, X, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,10 +18,14 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InvoiceActions } from "@/components/site/invoice-actions";
+import { AvailableOffers } from "@/components/site/available-offers";
 import { useVehicles } from "@/lib/hooks/use-vehicles";
 import { useBooking } from "@/lib/hooks/use-booking";
 import { computePricing } from "@/lib/pricing";
+import { findClashingBookings } from "@/lib/availability";
+import { validateCoupon, type Coupon, type EligibleOffer } from "@/lib/coupons";
 import { createOfflineBooking, WALKIN_USER_ID, type DiscountType } from "@/lib/bookings";
+import type { Booking } from "@/lib/bookings";
 
 export default function OfflineBillingPage() {
   const { vehicles } = useVehicles();
@@ -34,17 +38,25 @@ export default function OfflineBillingPage() {
   const [customerName, setCustomerName] = React.useState("");
   const [customerPhone, setCustomerPhone] = React.useState("");
   const [licenseNumber, setLicenseNumber] = React.useState("");
-  const [discountType, setDiscountType] = React.useState<Exclude<DiscountType, "coupon">>("none");
+  const [discountType, setDiscountType] = React.useState<DiscountType>("none");
   const [discountValue, setDiscountValue] = React.useState(0);
+  const [couponInput, setCouponInput] = React.useState("");
+  const [couponChecking, setCouponChecking] = React.useState(false);
+  const [couponError, setCouponError] = React.useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = React.useState<{ coupon: Coupon; discountAmount: number } | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [createdBookingId, setCreatedBookingId] = React.useState<string | null>(null);
+  const [checkingAvailability, setCheckingAvailability] = React.useState(false);
+  const [clashes, setClashes] = React.useState<Booking[]>([]);
 
   const { booking: createdBooking } = useBooking(createdBookingId ?? undefined);
   const vehicle = availableVehicles.find((v) => v.id === vehicleId);
   const days = Math.max(1, differenceInCalendarDays(new Date(end), new Date(start)));
 
   const pricing = vehicle ? computePricing(vehicle.pricePerDay, days) : null;
-  const discountAmount = pricing
+  const discountAmount = appliedCoupon
+    ? appliedCoupon.discountAmount
+    : pricing
     ? discountType === "percentage"
       ? Math.round((pricing.subtotal * discountValue) / 100)
       : discountType === "fixed"
@@ -54,6 +66,46 @@ export default function OfflineBillingPage() {
   const total = pricing ? pricing.subtotal - discountAmount + pricing.serviceFee + pricing.deposit : 0;
 
   const canSubmit = vehicle && customerName.trim() && customerPhone.trim() && licenseNumber.trim();
+
+  React.useEffect(() => {
+    if (!vehicle || end <= start) {
+      setClashes([]);
+      return;
+    }
+    setCheckingAvailability(true);
+    const handle = setTimeout(() => {
+      findClashingBookings(vehicle.id, start, end)
+        .then(setClashes)
+        .catch((err) => {
+          console.error("Failed to check availability:", err);
+          setClashes([]);
+        })
+        .finally(() => setCheckingAvailability(false));
+    }, 300);
+    return () => clearTimeout(handle);
+  }, [vehicle, start, end]);
+
+  const handleApplyCoupon = async () => {
+    if (!couponInput.trim() || !pricing) return;
+    setCouponChecking(true);
+    setCouponError(null);
+    try {
+      // Walk-ins have no account to check "first booking" status against —
+      // new-customer-only codes simply won't apply here; use the manual
+      // percentage/fixed discount for that case instead.
+      const result = await validateCoupon(couponInput, { subtotal: pricing.subtotal, isFirstBooking: false });
+      if (result.ok) {
+        setAppliedCoupon({ coupon: result.coupon, discountAmount: result.discountAmount });
+        toast.success(`"${result.coupon.code}" applied.`);
+      } else {
+        setCouponError(result.message);
+      }
+    } catch {
+      setCouponError("Couldn't check that code — try again.");
+    } finally {
+      setCouponChecking(false);
+    }
+  };
 
   const handleCreate = async () => {
     if (!vehicle || !pricing) return;
@@ -72,10 +124,10 @@ export default function OfflineBillingPage() {
         subtotal: pricing.subtotal,
         serviceFee: pricing.serviceFee,
         deposit: pricing.deposit,
-        discountType,
-        discountValue,
+        discountType: appliedCoupon ? "coupon" : discountType,
+        discountValue: appliedCoupon ? appliedCoupon.coupon.value : discountValue,
         discountAmount,
-        couponCode: null,
+        couponCode: appliedCoupon?.coupon.code ?? null,
         total,
         customerName,
         customerEmail: "",
@@ -99,6 +151,9 @@ export default function OfflineBillingPage() {
     setLicenseNumber("");
     setDiscountType("none");
     setDiscountValue(0);
+    setAppliedCoupon(null);
+    setCouponInput("");
+    setCouponError(null);
   };
 
   if (createdBooking) {
@@ -112,6 +167,7 @@ export default function OfflineBillingPage() {
             <h1 className="mt-4 font-display text-xl font-semibold">Booking recorded</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {createdBooking.vehicleName} · ₹{createdBooking.total.toLocaleString("en-IN")} collected offline.
+              {createdBooking.couponCode && ` (Code: ${createdBooking.couponCode})`}
             </p>
             <div className="mt-6">
               <InvoiceActions booking={createdBooking} />
@@ -162,6 +218,31 @@ export default function OfflineBillingPage() {
               </div>
             </div>
 
+            {vehicle &&
+              (checkingAvailability ? (
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Loader2 className="size-3.5 animate-spin" /> Checking availability…
+                </p>
+              ) : clashes.length > 0 ? (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                  <p className="flex items-center gap-2 font-medium text-destructive">
+                    <TriangleAlert className="size-4 shrink-0" />
+                    Clashes with {clashes.length} other booking{clashes.length > 1 ? "s" : ""}
+                  </p>
+                  <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                    {clashes.map((c) => (
+                      <li key={c.id}>
+                        {c.customerName} — {c.startDate} to {c.endDate}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="flex items-center gap-1.5 text-xs text-success">
+                  <ShieldCheck className="size-3.5" /> This vehicle is free for these dates.
+                </p>
+              ))}
+
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label>Customer name</Label>
@@ -179,14 +260,22 @@ export default function OfflineBillingPage() {
 
             <div>
               <Label className="text-xs text-muted-foreground">Discount</Label>
-              <Tabs value={discountType} onValueChange={(v) => setDiscountType(v as typeof discountType)} className="mt-1.5">
+              <Tabs
+                value={discountType}
+                onValueChange={(v) => {
+                  setDiscountType(v as DiscountType);
+                  setAppliedCoupon(null);
+                }}
+                className="mt-1.5"
+              >
                 <TabsList>
                   <TabsTrigger value="none">None</TabsTrigger>
                   <TabsTrigger value="percentage">Percentage</TabsTrigger>
                   <TabsTrigger value="fixed">Fixed (₹)</TabsTrigger>
+                  <TabsTrigger value="coupon">Coupon</TabsTrigger>
                 </TabsList>
               </Tabs>
-              {discountType !== "none" && (
+              {discountType === "percentage" || discountType === "fixed" ? (
                 <Input
                   type="number"
                   className="mt-2"
@@ -194,7 +283,56 @@ export default function OfflineBillingPage() {
                   value={discountValue || ""}
                   onChange={(e) => setDiscountValue(Number(e.target.value) || 0)}
                 />
-              )}
+              ) : discountType === "coupon" ? (
+                <div className="mt-2">
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between rounded-lg bg-success/10 px-3 py-2 text-sm">
+                      <span className="flex items-center gap-1.5 text-success">
+                        <Tag className="size-3.5" /> {appliedCoupon.coupon.code} applied
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAppliedCoupon(null);
+                          setCouponInput("");
+                        }}
+                        className="text-muted-foreground hover:text-foreground"
+                        aria-label="Remove coupon"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {pricing && (
+                        <AvailableOffers
+                          subtotal={pricing.subtotal}
+                          isFirstBooking={false}
+                          onSelect={(offer: EligibleOffer) => {
+                            setAppliedCoupon(offer);
+                            toast.success(`"${offer.coupon.code}" applied.`);
+                          }}
+                        />
+                      )}
+                      <div className="flex gap-2">
+                        <Input
+                          value={couponInput}
+                          onChange={(e) => {
+                            setCouponInput(e.target.value);
+                            setCouponError(null);
+                          }}
+                          placeholder="Coupon code"
+                          className="uppercase"
+                        />
+                        <Button type="button" variant="outline" onClick={handleApplyCoupon} disabled={couponChecking}>
+                          {couponChecking ? <Loader2 className="size-4 animate-spin" /> : "Apply"}
+                        </Button>
+                      </div>
+                      {couponError && <p className="mt-1.5 text-xs text-destructive">{couponError}</p>}
+                    </>
+                  )}
+                </div>
+              ) : null}
             </div>
           </CardContent>
         </Card>
@@ -215,7 +353,7 @@ export default function OfflineBillingPage() {
                   </div>
                   {discountAmount > 0 && (
                     <div className="flex justify-between text-success">
-                      <span>Discount</span>
+                      <span>Discount{appliedCoupon ? ` (${appliedCoupon.coupon.code})` : ""}</span>
                       <span className="font-mono-num">−₹{discountAmount.toLocaleString("en-IN")}</span>
                     </div>
                   )}
@@ -238,9 +376,15 @@ export default function OfflineBillingPage() {
               <p className="mt-4 text-sm text-muted-foreground">Choose a vehicle to see the bill.</p>
             )}
 
-            <Button className="mt-5 w-full" size="lg" disabled={!canSubmit || submitting} onClick={handleCreate}>
+            <Button
+              className="mt-5 w-full"
+              size="lg"
+              variant={clashes.length > 0 ? "destructive" : "default"}
+              disabled={!canSubmit || submitting || checkingAvailability}
+              onClick={handleCreate}
+            >
               {submitting && <Loader2 className="size-4 animate-spin" />}
-              Record booking & mark paid
+              {clashes.length > 0 ? "Record anyway (clashes)" : "Record booking & mark paid"}
             </Button>
           </CardContent>
         </Card>

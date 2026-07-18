@@ -99,3 +99,36 @@ export async function validateCoupon(
 export async function redeemCoupon(couponId: string): Promise<void> {
   await updateDoc(doc(db, "coupons", couponId), { usedCount: increment(1) });
 }
+
+export type EligibleOffer = { coupon: Coupon; discountAmount: number };
+
+/**
+ * Fetches every active coupon and filters down to ones actually usable
+ * right now for this order — same rules as validateCoupon, just applied
+ * to the whole list instead of one code. Used to show "available offers"
+ * at checkout instead of requiring the customer to already know a code.
+ */
+export async function fetchEligibleOffers(ctx: {
+  subtotal: number;
+  isFirstBooking: boolean;
+}): Promise<EligibleOffer[]> {
+  const snap = await getDocs(query(collection(db, "coupons"), where("active", "==", true)));
+  const today = new Date().toISOString().slice(0, 10);
+
+  const offers: EligibleOffer[] = [];
+  for (const docSnap of snap.docs) {
+    const coupon = { id: docSnap.id, ...docSnap.data() } as Coupon;
+    if (coupon.expiresAt && coupon.expiresAt < today) continue;
+    if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) continue;
+    if (coupon.newCustomerOnly && !ctx.isFirstBooking) continue;
+    if (ctx.subtotal < coupon.minOrderAmount) continue;
+
+    const discountAmount =
+      coupon.type === "percentage"
+        ? Math.round((ctx.subtotal * coupon.value) / 100)
+        : Math.min(coupon.value, ctx.subtotal);
+    offers.push({ coupon, discountAmount });
+  }
+
+  return offers.sort((a, b) => b.discountAmount - a.discountAmount);
+}

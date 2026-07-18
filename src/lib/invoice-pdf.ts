@@ -167,7 +167,8 @@ export function generateBookingInvoicePdf(booking: Booking, business: BusinessDe
   const rows: (string | number)[][] = [
     [
       1,
-      `${booking.vehicleName} rental (${booking.vehicleType === "car" ? "Car" : "Bike"})`,
+      `${booking.vehicleName} rental (${booking.vehicleType === "car" ? "Car" : "Bike"})` +
+        (booking.couponCode ? ` — Code: ${booking.couponCode}` : ""),
       fmtMoney(booking.pricePerDay),
       booking.days,
       fmtMoney(gross),

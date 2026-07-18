@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Car, Bike, Ticket, LogIn, CalendarDays, Ban, CalendarClock, Loader2, TriangleAlert } from "lucide-react";
+import { Car, Bike, Ticket, LogIn, CalendarDays, Ban, CalendarClock, Loader2, TriangleAlert, Tag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,6 +47,15 @@ function RefundNote({ booking }: { booking: Booking }) {
         ? `Refunded ₹${booking.refundAmount.toLocaleString("en-IN")}`
         : `Refund of ₹${booking.refundAmount.toLocaleString("en-IN")} pending`}
       {booking.cancellationCharge > 0 && ` (₹${booking.cancellationCharge.toLocaleString("en-IN")} cancellation charge applied)`}
+    </p>
+  );
+}
+
+function CouponNote({ booking }: { booking: Booking }) {
+  if (!booking.couponCode) return null;
+  return (
+    <p className="mt-1.5 flex items-center gap-1 text-xs text-success">
+      <Tag className="size-3.5" /> Code {booking.couponCode} applied (−₹{booking.discountAmount.toLocaleString("en-IN")})
     </p>
   );
 }
@@ -136,6 +145,7 @@ function BookingRow({
               <StatusBadge booking={booking} />
             </div>
             <RefundNote booking={booking} />
+            <CouponNote booking={booking} />
             <RescheduleNote booking={booking} />
           </div>
         </div>

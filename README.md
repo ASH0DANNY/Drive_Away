@@ -239,6 +239,59 @@ not by hiding these values.
   since Firestore has no native group-by/aggregation for that shape of
   query.
 
+### Double-booking prevention
+Earlier phases had a real gap: nothing actually stopped two customers (or
+a customer and a walk-in) from booking the same vehicle for overlapping
+dates — the clash check built for reschedule requests wasn't wired into
+the booking-creation paths at all. Fixed in three places, all reusing
+`src/lib/availability.ts`:
+- **Vehicle detail page** — the booking widget live-checks the selected
+  dates as you change them and disables "Reserve" if they clash, showing
+  which existing booking conflicts.
+- **Checkout** — re-checks authoritatively right before creating the
+  booking (catches the case where someone else booked those exact dates
+  in the seconds between the widget check and submission, or where this
+  page was reached directly via URL without the widget's check ever
+  running). Blocks the booking outright on a clash — there's no reason a
+  standard customer checkout should proceed over a real conflict.
+- **Offline billing** — same live check as the widget; unlike checkout,
+  admin can override and record the booking anyway if they have context
+  the system doesn't (mirrors the same override pattern already used in
+  the reschedule-review and edit-dates dialogs).
+- *Known limitation:* this is enforced client-side, not by Firestore
+  Security Rules — rules can't run the kind of cross-document overlap
+  query this needs. Truly server-enforced prevention would need a Cloud
+  Function running the check inside a transaction, which is out of scope
+  for a zero-server-cost build. Fine for normal usage; a determined,
+  technical bad actor bypassing the client UI directly could still create
+  a conflicting write.
+
+### Completed bookings are locked in the Bookings Manager
+Once a booking is marked returned (`status: "completed"`), its row no
+longer shows the status/payment selects or any of the action buttons
+(mark paid, edit dates, cancel, mark refunded) — those don't make sense
+on a closed-out rental and previously made completed and upcoming
+bookings hard to tell apart at a glance. Only the invoice view/download
+buttons remain, since that's a legitimate thing to still need after the
+fact. The row also dims slightly for a quick visual cue.
+
+### Coupon codes are visible everywhere a discount shows
+- **Checkout now shows an "Available offers" list** above the manual
+  code field (`src/components/site/available-offers.tsx`,
+  `fetchEligibleOffers()` in `src/lib/coupons.ts`) — every currently
+  active, eligible coupon for that order, so customers don't need to
+  already know a code exists. Selecting one applies it the same as typing
+  it; the manual field is still there for codes not listed.
+- **Offline billing got the same treatment** — a new "Coupon" option
+  alongside the existing manual percentage/fixed discount, with the same
+  available-offers list (new-customer-only codes won't apply here, since
+  a walk-in has no account to check that against — use the manual
+  discount for that case instead).
+- **Wherever a discount amount appears, the code now appears with it:**
+  the invoice PDF's line-item description, My Bookings, the admin
+  Bookings Manager table, and the Offline Billing confirmation screen.
+  (Reports already had this via the Coupon Usage table/sheet.)
+
 ### Admin dashboard (`/admin`)
 Guarded by `AdminGuard` (`src/components/admin/admin-guard.tsx`):
 signed-out → prompted to sign in; signed-in but not an admin → clear

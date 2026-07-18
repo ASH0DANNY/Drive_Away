@@ -3,14 +3,16 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { format, differenceInCalendarDays, addDays } from "date-fns";
-import { CalendarDays, ShieldCheck, ArrowRight } from "lucide-react";
+import { CalendarDays, ShieldCheck, ArrowRight, Loader2, TriangleAlert } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { computePricing, DEPOSIT } from "@/lib/pricing";
+import { findClashingBookings } from "@/lib/availability";
 import type { Vehicle } from "@/lib/default-content";
+import type { Booking } from "@/lib/bookings";
 
 export function BookingWidget({ vehicle }: { vehicle: Vehicle }) {
   const router = useRouter();
@@ -19,9 +21,31 @@ export function BookingWidget({ vehicle }: { vehicle: Vehicle }) {
 
   const [start, setStart] = React.useState(today);
   const [end, setEnd] = React.useState(tomorrow);
+  const [checking, setChecking] = React.useState(false);
+  const [clashes, setClashes] = React.useState<Booking[]>([]);
 
   const days = Math.max(1, differenceInCalendarDays(new Date(end), new Date(start)));
   const { subtotal, serviceFee, total } = computePricing(vehicle.pricePerDay, days);
+
+  // Live availability check as dates change — this is what stops a
+  // customer from reserving a vehicle that's already booked for
+  // overlapping dates. Debounced since it fires on every date edit.
+  React.useEffect(() => {
+    if (end <= start) return;
+    setChecking(true);
+    const handle = setTimeout(() => {
+      findClashingBookings(vehicle.id, start, end)
+        .then(setClashes)
+        .catch((err) => {
+          console.error("Failed to check availability:", err);
+          setClashes([]);
+        })
+        .finally(() => setChecking(false));
+    }, 350);
+    return () => clearTimeout(handle);
+  }, [vehicle.id, start, end]);
+
+  const isAvailable = vehicle.available && clashes.length === 0;
 
   const handleReserve = () => {
     const params = new URLSearchParams({ start, end });
@@ -82,6 +106,18 @@ export function BookingWidget({ vehicle }: { vehicle: Vehicle }) {
           {days} {days === 1 ? "day" : "days"} rental
         </div>
 
+        {checking ? (
+          <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Loader2 className="size-3.5 animate-spin" /> Checking availability for these dates…
+          </p>
+        ) : clashes.length > 0 ? (
+          <p className="mt-3 flex items-start gap-1.5 rounded-lg bg-destructive/10 p-2.5 text-xs text-destructive">
+            <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+            Already booked {clashes[0].startDate} to {clashes[0].endDate}
+            {clashes.length > 1 ? ` (+${clashes.length - 1} more)` : ""} — pick different dates.
+          </p>
+        ) : null}
+
         <Separator className="my-4" />
 
         <div className="space-y-2 text-sm">
@@ -109,7 +145,7 @@ export function BookingWidget({ vehicle }: { vehicle: Vehicle }) {
         <Button
           size="lg"
           className="mt-5 w-full"
-          disabled={!vehicle.available}
+          disabled={!isAvailable || checking}
           onClick={handleReserve}
         >
           Reserve this {vehicle.type} <ArrowRight className="size-4" />

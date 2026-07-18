@@ -223,6 +223,17 @@ function BookingActions({ booking, onChanged }: { booking: Booking; onChanged: (
     }
   };
 
+  const isClosed = booking.status === "completed";
+
+  if (isClosed) {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-muted-foreground">Completed — no further action</span>
+        {booking.paymentStatus === "paid" && <InvoiceActions booking={booking} />}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Select value={booking.status} onValueChange={(v) => handleStatus(v as BookingStatus)}>
@@ -375,7 +386,7 @@ export default function BookingsManagerPage() {
               </TableHeader>
               <TableBody>
                 {bookings.map((b) => (
-                  <TableRow key={b.id}>
+                  <TableRow key={b.id} className={b.status === "completed" ? "opacity-60" : undefined}>
                     <TableCell>
                       <p className="font-medium">{b.customerName}</p>
                       <p className="text-xs text-muted-foreground">
@@ -387,7 +398,14 @@ export default function BookingsManagerPage() {
                     <TableCell>
                       <DatesCell booking={b} />
                     </TableCell>
-                    <TableCell className="font-mono-num">₹{b.total.toLocaleString("en-IN")}</TableCell>
+                    <TableCell className="font-mono-num">
+                      ₹{b.total.toLocaleString("en-IN")}
+                      {b.couponCode && (
+                        <p className="mt-0.5 flex items-center gap-1 font-sans text-xs font-normal text-success">
+                          <Tag className="size-3" /> {b.couponCode}
+                        </p>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant={paymentBadgeVariant(b.paymentStatus)} className="capitalize">
                         {b.paymentStatus}
